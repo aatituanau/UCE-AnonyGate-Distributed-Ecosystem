@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-alias",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-alias\"",
+                    "dev":  "echo \"Running ms-alias\"",
+                    "test":  "echo \"Testing ms-alias\""
+                }
+}

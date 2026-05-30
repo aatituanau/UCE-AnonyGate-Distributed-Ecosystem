@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-audit",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-audit\"",
+                    "dev":  "echo \"Running ms-audit\"",
+                    "test":  "echo \"Testing ms-audit\""
+                }
+}

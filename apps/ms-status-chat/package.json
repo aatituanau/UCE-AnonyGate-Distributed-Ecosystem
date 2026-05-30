@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-status-chat",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-status-chat\"",
+                    "dev":  "echo \"Running ms-status-chat\"",
+                    "test":  "echo \"Testing ms-status-chat\""
+                }
+}

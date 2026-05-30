@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-forms",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-forms\"",
+                    "dev":  "echo \"Running ms-forms\"",
+                    "test":  "echo \"Testing ms-forms\""
+                }
+}

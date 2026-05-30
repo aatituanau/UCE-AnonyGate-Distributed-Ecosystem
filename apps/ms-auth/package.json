@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-auth",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-auth\"",
+                    "dev":  "echo \"Running ms-auth\"",
+                    "test":  "echo \"Testing ms-auth\""
+                }
+}

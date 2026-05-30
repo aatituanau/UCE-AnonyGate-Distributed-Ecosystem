@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "backoffice",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building backoffice\"",
+                    "dev":  "echo \"Running backoffice\"",
+                    "lint":  "echo \"Linting backoffice\""
+                }
+}
