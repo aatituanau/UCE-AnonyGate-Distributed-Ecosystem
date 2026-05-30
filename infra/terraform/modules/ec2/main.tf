@@ -39,6 +39,6 @@ resource "aws_instance" "this" {
   vpc_security_group_ids = [aws_security_group.this.id]
 
   tags = {
-    Name = "${var.environment}-instance"
+    Name = "${var.environment}-${var.instance_name}"
   }
 }

@@ -2,7 +2,7 @@ name: CD Terraform
 
 on:
   push:
-    branches: [ "main", "qa", "dev" ]
+    branches: [ "main", "qa" ]
 
 jobs:
   terraform-apply:
@@ -10,10 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set Environment (DEV)
-        if: github.ref == 'refs/heads/dev'
-        run: echo "TF_ENV=dev" >> $GITHUB_ENV
-        
       - name: Set Environment (QA)
         if: github.ref == 'refs/heads/qa'
         run: echo "TF_ENV=qa" >> $GITHUB_ENV
