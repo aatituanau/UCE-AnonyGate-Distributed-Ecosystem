@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "status",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building status\"",
+                    "dev":  "echo \"Running status\"",
+                    "lint":  "echo \"Linting status\""
+                }
+}
