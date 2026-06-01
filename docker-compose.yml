@@ -2,16 +2,16 @@ version: '3.8'
 
 services:
   postgres:
-    image: bitnami/postgresql:latest
+    image: postgres:16-alpine
     environment:
-      - POSTGRESQL_USERNAME=anonygate
-      - POSTGRESQL_PASSWORD=anonygate_pass
-      - POSTGRESQL_DATABASE=anonygate_db
+      - POSTGRES_USER=anonygate
+      - POSTGRES_PASSWORD=anonygate_pass
+      - POSTGRES_DB=anonygate_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   mongodb:
-    image: bitnami/mongodb:latest
+    image: bitnami/mongodb:7.0
     environment:
       - MONGODB_ROOT_PASSWORD=mongo_root
       - MONGODB_USERNAME=anonygate
@@ -21,23 +21,22 @@ services:
       - "27017:27017"
 
   redis:
-    image: bitnami/redis:latest
-    environment:
-      - REDIS_PASSWORD=anonygate_pass
+    image: redis:7-alpine
+    command: redis-server --requirepass anonygate_pass
     ports:
       - "6379:6379"
 
   rabbitmq:
-    image: bitnami/rabbitmq:latest
+    image: rabbitmq:3-management
     environment:
-      - RABBITMQ_USERNAME=anonygate
-      - RABBITMQ_PASSWORD=anonygate_pass
+      - RABBITMQ_DEFAULT_USER=anonygate
+      - RABBITMQ_DEFAULT_PASS=anonygate_pass
     ports:
       - "5672:5672"
       - "15672:15672"
 
   kafka-0:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:3.5
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -50,7 +49,7 @@ services:
       - "9092:9092"
 
   kafka-1:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:3.5
     environment:
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -63,7 +62,7 @@ services:
       - "9094:9092"
 
   kafka-2:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:3.5
     environment:
       - KAFKA_CFG_NODE_ID=2
       - KAFKA_CFG_PROCESS_ROLES=controller,broker

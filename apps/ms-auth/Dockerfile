@@ -2,24 +2,24 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 1. Copiar archivos de dependencias
+# 1. Copy dependencies files
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 2. Instalar dependencias
+# 2. Install dependencies
 RUN npm install
 
-# 3. Generar el cliente de Prisma para la Base de Datos
+# 3. Generate the Prisma client for the Database
 RUN npx prisma generate
 
-# 4. Copiar todo el código fuente del microservicio
+# 4. Copy all the source code of the microservice
 COPY . .
 
-# 5. Compilar el código de TypeScript a JavaScript
+# 5. Compile the TypeScript code to JavaScript
 RUN npm run build
 
-# 6. Exponer el puerto por donde escucha NestJS
+# 6. Expose the port by where NestJS listens
 EXPOSE 3000
 
-# 7. Comando para arrancar el servidor en modo Producción
+# 7. Command to start the server in Production mode
 CMD ["npm", "run", "start:prod"]
