@@ -30,8 +30,6 @@ export class AuthService {
         const payload = { sub: user.id, email: user.email };
         const accessToken = await this.jwtService.signAsync(payload);
 
-
-
         // GENERATE REFRESH TOKEN
         // Create a text random token
         const plainRefreshToken = crypto.randomBytes(40).toString('hex');
@@ -45,7 +43,7 @@ export class AuthService {
         // Save the refresh_token in the database
         await this.prisma.refreshToken.create({
             data: {
-                userId: user!.id,
+                userId: user.id,
                 tokenHash: tokenHash,
                 expiresAt: expiresAt
             },
@@ -58,4 +56,69 @@ export class AuthService {
             refresh_token: plainRefreshToken // We return the plain text for the frontend to store
         };
     }
+
+    // REFRESH TOKEN LOGIC
+
+    async refresh(email: string, plainRefreshToken: string) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        // 1. Find all active refresh tokens for this user
+        const activeTokens = await this.prisma.refreshToken.findMany({
+            where: {
+                userId: user.id,
+                revoked: false,
+                expiresAt: { gt: new Date() } // Ensure token is not expired
+            }
+        });
+
+        // 2. Compare the plain token against the hashed tokens in DB
+        let isValid = false;
+        let usedTokenId: string | undefined;
+
+        for (const token of activeTokens) {
+            if (await bcrypt.compare(plainRefreshToken, token.tokenHash)) {
+                isValid = true;
+                usedTokenId = token.id;
+                break;
+            }
+        }
+
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid or expired refresh token');
+        }
+
+        // 3. Token Rotation: Revoke the old token so it cannot be reused
+        await this.prisma.refreshToken.update({
+            where: { id: usedTokenId },
+            data: { revoked: true }
+        });
+
+        // 4. Generate a completely NEW pair of tokens
+        const payload = { sub: user.id, email: user.email };
+        const newAccessToken = await this.jwtService.signAsync(payload);
+
+        const newPlainRefreshToken = crypto.randomBytes(40).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
+
+        await this.prisma.refreshToken.create({
+            data: {
+                userId: user.id,
+                tokenHash: await bcrypt.hash(newPlainRefreshToken, 10),
+                expiresAt: expiresAt
+            },
+        });
+
+        return {
+            access_token: newAccessToken,
+            refresh_token: newPlainRefreshToken,
+        };
+    }
+
+
+
 }

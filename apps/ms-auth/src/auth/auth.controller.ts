@@ -28,6 +28,14 @@ export class AuthController {
         return this.authService.login(loginDto.email, loginDto.password);
     }
 
+
+    // REFRESH TOKEN ENDPOINT
+    @HttpCode(HttpStatus.OK)
+    @Post('refresh')
+    refresh(@Body() body: { email: string; refresh_token: string }) {
+        return this.authService.refresh(body.email, body.refresh_token);
+    }
+
     //TEST ENDPOINT USERS   
     @UseGuards(AuthGuard('jwt')) // Protege el endpoint
     @Get('users')
