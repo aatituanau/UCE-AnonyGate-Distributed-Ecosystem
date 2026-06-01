@@ -33,7 +33,13 @@ export class AuthController {
     @Get('users')
     async getAllUsers() {
         // get data with Prisma!
-        const users = await this.prisma.user.findMany();
+        const users = await this.prisma.user.findMany({
+            select: {
+                id: true,
+                email: true,
+                createdAt: true
+            }
+        });
         return {
             message: "¡Conexión exitosa desde Postman!",
             total: users.length,
