@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "main", "QA" ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   terraform-apply:
     runs-on: ubuntu-latest
