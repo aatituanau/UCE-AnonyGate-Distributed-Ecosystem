@@ -14,7 +14,7 @@ module "ec2_1_nginx_bastion" {
   instance_name               = "ec2-1-nginx-bastion"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.public_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t2.micro"
   associate_public_ip_address = true
   allowed_ports               = [22, 80]
   key_name                    = var.key_name
@@ -51,7 +51,7 @@ module "ec2_2_ms_core" {
   instance_name               = "ec2-2-ms-core"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.private_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 3000, 3001, 3002]
   key_name                    = var.key_name
@@ -71,7 +71,7 @@ module "ec2_3_ms_processing" {
   instance_name               = "ec2-3-ms-processing"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.private_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 3003, 3004, 3005]
   key_name                    = var.key_name
@@ -91,7 +91,7 @@ module "ec2_4_ms_tracking" {
   instance_name               = "ec2-4-ms-tracking"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.private_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 3006, 3007]
   key_name                    = var.key_name
@@ -111,7 +111,7 @@ module "ec2_5_ms_specialized" {
   instance_name               = "ec2-5-ms-specialized"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.private_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 3008, 3009]
   key_name                    = var.key_name
@@ -131,7 +131,7 @@ module "ec2_6_db_postgres" {
   instance_name               = "ec2-6-db-postgres"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.private_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 5432]
   key_name                    = var.key_name
@@ -152,7 +152,7 @@ module "ec2_7_db_mongodb" {
   instance_name               = "ec2-7-db-mongodb"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.private_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 27017]
   key_name                    = var.key_name
