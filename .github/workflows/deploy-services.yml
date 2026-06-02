@@ -75,14 +75,23 @@ jobs:
           proxy_username: ubuntu
           proxy_key: ${{ secrets[format('EC2_SSH_KEY{0}', env.ENV_SUFFIX)] }}
           script: |
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "Waiting for cloud-init to finish..."
+            while [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 5; done
             
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
-            docker stop ms-auth || true
-            docker rm ms-auth || true
-            docker run -d --name ms-auth -p 3000:3000 --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found! Forcing installation..."
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose
+            fi
             
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
-            docker stop ms-alias || true
-            docker rm ms-alias || true
-            docker run -d --name ms-alias -p 3001:3001 --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+            sudo docker stop ms-auth || true
+            sudo docker rm ms-auth || true
+            sudo docker run -d --name ms-auth -p 3000:3000 --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+            
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
+            sudo docker stop ms-alias || true
+            sudo docker rm ms-alias || true
+            sudo docker run -d --name ms-alias -p 3001:3001 --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
