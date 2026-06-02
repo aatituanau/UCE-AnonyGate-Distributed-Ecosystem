@@ -1,5 +1,7 @@
 name: Debug EC2
-on: workflow_dispatch
+on:
+  push:
+    branches: [ "QA" ]
 jobs:
   debug:
     runs-on: ubuntu-latest
