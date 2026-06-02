@@ -99,4 +99,6 @@ jobs:
             sudo docker rm ms-alias || true
             sudo docker run -d --name ms-alias -p 3001:3001 \
               -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets[format('DB_POSTGRES_IP{0}', env.ENV_SUFFIX)] }}:5432/anonygate_db?schema=alias" \
+              -e REDIS_HOST="${{ secrets[format('DB_QUEUES_IP{0}', env.ENV_SUFFIX)] }}" \
+              -e REDIS_PORT="6379" \
               --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
