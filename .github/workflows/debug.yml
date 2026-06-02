@@ -1,7 +1,7 @@
 name: Debug EC2
 on:
   push:
-    branches: [ "QA" ]
+    branches: [ "QA", "main" ]
 jobs:
   debug:
     runs-on: ubuntu-latest
