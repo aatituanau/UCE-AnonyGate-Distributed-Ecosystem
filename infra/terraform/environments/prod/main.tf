@@ -28,13 +28,13 @@ module "ec2_1_nginx_bastion" {
                   listen [::]:80 default_server;
 
                   location /auth/ {
-                      proxy_pass http://${module.ec2_2_ms_core.private_ip}:3000/;
+                      proxy_pass http://${module.ec2_2_ms_core.private_ip}:3000;
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
                   location /aliases/ {
-                      proxy_pass http://${module.ec2_2_ms_core.private_ip}:3001/;
+                      proxy_pass http://${module.ec2_2_ms_core.private_ip}:3001;
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
@@ -141,7 +141,8 @@ module "ec2_6_db_postgres" {
               apt-get install -y docker.io docker-compose
               systemctl start docker
               systemctl enable docker
-              docker run -d --name postgres -e POSTGRES_USER=anonygate -e POSTGRES_PASSWORD=anonygate_pass -e POSTGRES_DB=anonygate_db -p 5432:5432 postgres:16-alpine
+              mkdir -p /home/ubuntu/postgres_data
+              docker run -d --name postgres -v /home/ubuntu/postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=anonygate -e POSTGRES_PASSWORD=anonygate_pass -e POSTGRES_DB=anonygate_db -p 5432:5432 postgres:16-alpine
               EOF
 }
 
@@ -184,6 +185,6 @@ module "ec2_8_db_queues" {
               systemctl start docker
               systemctl enable docker
               # Start Redis
-              docker run -d --name redis -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
+              docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
               EOF
 }
