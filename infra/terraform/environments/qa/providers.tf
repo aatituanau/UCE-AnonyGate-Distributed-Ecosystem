@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket = "anonygate-tf-state-bucket-xyz"
+    bucket = "anonygate-tf-state-bucket"
     key    = "qa/terraform.tfstate"
     region = "us-east-1"
   }

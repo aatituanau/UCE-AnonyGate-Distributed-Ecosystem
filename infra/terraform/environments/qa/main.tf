@@ -45,6 +45,16 @@ module "ec2_1_nginx_bastion" {
               EOF
 }
 
+# --- Elastic IP for Nginx/Bastion (static public IP, never changes) ---
+resource "aws_eip" "nginx_bastion_eip" {
+  instance = module.ec2_1_nginx_bastion.instance_id
+  domain   = "vpc"
+  tags = {
+    Name        = "qa-nginx-bastion-eip"
+    Environment = var.environment
+  }
+}
+
 # --- EC2-2: PRIVATE SUBNET (ms-auth, ms-alias, ms-forms) ---
 module "ec2_2_ms_core" {
   source                      = "../../modules/ec2"
