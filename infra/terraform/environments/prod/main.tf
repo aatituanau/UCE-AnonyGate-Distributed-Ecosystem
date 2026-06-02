@@ -1,17 +1,189 @@
 module "vpc" {
-  source             = "../../modules/vpc"
-  environment        = var.environment
-  vpc_cidr           = "10.2.0.0/16"
-  public_subnet_cidr = "10.2.1.0/24"
-  availability_zone  = "us-east-1a"
+  source              = "../../modules/vpc"
+  environment         = var.environment
+  vpc_cidr            = "10.2.0.0/16"
+  public_subnet_cidr  = "10.2.1.0/24"
+  private_subnet_cidr = "10.2.2.0/24"
+  availability_zone   = "us-east-1a"
 }
 
-# Ejemplo de Instancia Base (No agrupada aún)
-module "base_instance" {
-  source        = "../../modules/ec2"
-  environment   = var.environment
-  instance_name = "base-node"
-  vpc_id        = module.vpc.vpc_id
-  subnet_id     = module.vpc.public_subnet_id
-  instance_type = "t3.micro"
+# --- EC2-1: PUBLIC SUBNET (Nginx + Bastion) ---
+module "ec2_1_nginx_bastion" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-1-nginx-bastion"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.public_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = true
+  allowed_ports               = [22, 80]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y nginx
+              cat > /etc/nginx/sites-available/default <<'NGINXCONF'
+              server {
+                  listen 80 default_server;
+                  listen [::]:80 default_server;
+
+                  location /auth/ {
+                      proxy_pass http://${module.ec2_2_ms_core.private_ip}:3000/;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
+                  location /aliases/ {
+                      proxy_pass http://${module.ec2_2_ms_core.private_ip}:3001/;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+              }
+              NGINXCONF
+              systemctl restart nginx
+              EOF
+}
+
+# --- EC2-2: PRIVATE SUBNET (ms-auth, ms-alias, ms-forms) ---
+module "ec2_2_ms_core" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-2-ms-core"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3000, 3001, 3002]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
+
+# --- EC2-3: PRIVATE SUBNET (ms-submission, ms-evidence, ms-admin) ---
+module "ec2_3_ms_processing" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-3-ms-processing"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3003, 3004, 3005]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
+
+# --- EC2-4: PRIVATE SUBNET (ms-status-chat, ms-audit) ---
+module "ec2_4_ms_tracking" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-4-ms-tracking"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3006, 3007]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
+
+# --- EC2-5: PRIVATE SUBNET (ms-sanitization, ms-ai) ---
+module "ec2_5_ms_specialized" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-5-ms-specialized"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3008, 3009]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
+
+# --- EC2-6: PRIVATE SUBNET (PostgreSQL) ---
+module "ec2_6_db_postgres" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-6-db-postgres"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 5432]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              docker run -d --name postgres -e POSTGRES_USER=anonygate -e POSTGRES_PASSWORD=anonygate_pass -e POSTGRES_DB=anonygate_db -p 5432:5432 postgres:16-alpine
+              EOF
+}
+
+# --- EC2-7: PRIVATE SUBNET (MongoDB) ---
+module "ec2_7_db_mongodb" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-7-db-mongodb"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 27017]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              docker run -d --name mongodb -e MONGODB_ROOT_PASSWORD=mongo_root -e MONGODB_USERNAME=anonygate -e MONGODB_PASSWORD=anonygate_pass -e MONGODB_DATABASE=anonygate_db -p 27017:27017 bitnami/mongodb:7.0
+              EOF
+}
+
+# --- EC2-8: PRIVATE SUBNET (Redis + Kafka + RabbitMQ) ---
+module "ec2_8_db_queues" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-8-db-queues"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_id
+  instance_type               = "t3.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 6379, 9092, 5672, 15672]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              # Start Redis
+              docker run -d --name redis -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
+              EOF
 }
