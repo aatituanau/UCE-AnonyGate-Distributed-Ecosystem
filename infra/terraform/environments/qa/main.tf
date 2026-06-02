@@ -156,7 +156,7 @@ module "ec2_6_db_postgres" {
               systemctl start docker
               systemctl enable docker
               mkdir -p /home/ubuntu/postgres_data
-              docker run -d --name postgres -v /home/ubuntu/postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=anonygate -e POSTGRES_PASSWORD=anonygate_pass -e POSTGRES_DB=anonygate_db -p 5432:5432 postgres:16-alpine
+              docker run -d --name postgres --restart unless-stopped -v /home/ubuntu/postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=anonygate -e POSTGRES_PASSWORD=anonygate_pass -e POSTGRES_DB=anonygate_db -p 5432:5432 postgres:16-alpine
               EOF
 }
 
