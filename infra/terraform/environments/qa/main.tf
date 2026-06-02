@@ -200,7 +200,7 @@ module "ec2_8_db_queues" {
               systemctl start docker
               systemctl enable docker
               # Start Redis
-              docker run -d --name redis -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
+              docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
               # Kafka and RabbitMQ can be started here later
               EOF
 }
