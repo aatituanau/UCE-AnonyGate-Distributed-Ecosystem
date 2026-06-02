@@ -22,4 +22,5 @@ RUN npm run build
 EXPOSE 3000
 
 # 7. Command to start the server in Production mode
-CMD ["npm", "run", "start:prod"]
+# Only push schema automatically, NEVER seed automatically to avoid overriding real data
+CMD sh -c "npx prisma db push && npm run start:prod"
