@@ -1,0 +1,6 @@
+{
+    "private":  true,
+    "name":  "shared-ui",
+    "version":  "1.0.0",
+    "main":  "index.js"
+}

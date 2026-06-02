@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-submission",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-submission\"",
+                    "dev":  "echo \"Running ms-submission\"",
+                    "test":  "echo \"Testing ms-submission\""
+                }
+}

@@ -1,0 +1,106 @@
+name: Deploy Microservices to EC2
+
+on:
+  push:
+    branches: [ "QA", "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_AUTH: aatituanau/anonygate-ms-auth
+  IMAGE_NAME_ALIAS: aatituanau/anonygate-ms-alias
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push MS-Auth
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/ms-auth
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+          no-cache: true
+
+      - name: Build and push MS-Alias
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/ms-alias
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
+          no-cache: true
+
+  deploy-to-ec2:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Set Environment variables
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/QA" ]; then
+            echo "ENV_PREFIX=qa" >> $GITHUB_ENV
+            echo "ENV_SUFFIX=_QA" >> $GITHUB_ENV
+          else
+            echo "ENV_PREFIX=prod" >> $GITHUB_ENV
+            echo "ENV_SUFFIX=_PROD" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AWS Credentials (for internal IP lookup)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets[format('AWS_ACCESS_KEY_ID{0}', env.ENV_SUFFIX)] }}
+          aws-secret-access-key: ${{ secrets[format('AWS_SECRET_ACCESS_KEY{0}', env.ENV_SUFFIX)] }}
+          aws-session-token: ${{ secrets[format('AWS_SESSION_TOKEN{0}', env.ENV_SUFFIX)] }}
+          aws-region: us-east-1
+
+      - name: Deploy MS-Auth and MS-Alias via Bastion
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets[format('EC2_HOST_MS_CORE{0}', env.ENV_SUFFIX)] }}
+          username: ubuntu
+          key: ${{ secrets[format('EC2_SSH_KEY{0}', env.ENV_SUFFIX)] }}
+          proxy_host: ${{ secrets[format('EC2_HOST_NGINX{0}', env.ENV_SUFFIX)] }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets[format('EC2_SSH_KEY{0}', env.ENV_SUFFIX)] }}
+          script: |
+            echo "Waiting for cloud-init to finish..."
+            while [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 5; done
+            
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found! Forcing installation..."
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose
+            fi
+            
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+            sudo docker stop ms-auth || true
+            sudo docker rm ms-auth || true
+            sudo docker run -d --name ms-auth -p 3000:3000 \
+              -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets[format('DB_POSTGRES_IP{0}', env.ENV_SUFFIX)] }}:5432/anonygate_db?schema=public" \
+              -e JWT_SECRET="SECRET_SUPER_SAFE_2026" \
+              --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+            
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
+            sudo docker stop ms-alias || true
+            sudo docker rm ms-alias || true
+            sudo docker run -d --name ms-alias -p 3001:3001 \
+              -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets[format('DB_POSTGRES_IP{0}', env.ENV_SUFFIX)] }}:5432/anonygate_db?schema=alias" \
+              -e REDIS_HOST="${{ secrets[format('DB_QUEUES_IP{0}', env.ENV_SUFFIX)] }}" \
+              -e REDIS_PORT="6379" \
+              --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest

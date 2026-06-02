@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-evidence",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-evidence\"",
+                    "dev":  "echo \"Running ms-evidence\"",
+                    "test":  "echo \"Testing ms-evidence\""
+                }
+}

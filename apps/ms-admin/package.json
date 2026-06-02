@@ -1,0 +1,10 @@
+{
+    "private":  true,
+    "name":  "ms-admin",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "echo \"Building ms-admin\"",
+                    "dev":  "echo \"Running ms-admin\"",
+                    "test":  "echo \"Testing ms-admin\""
+                }
+}
