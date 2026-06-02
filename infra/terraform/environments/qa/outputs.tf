@@ -1,5 +1,6 @@
 output "nginx_bastion_public_ip" {
-  value = module.ec2_1_nginx_bastion.public_ip
+  description = "Static Elastic IP of the Nginx Bastion (never changes between lab restarts)"
+  value       = aws_eip.nginx_bastion_eip.public_ip
 }
 
 output "ms_core_private_ip" {
