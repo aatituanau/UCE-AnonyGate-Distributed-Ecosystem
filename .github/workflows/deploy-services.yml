@@ -34,6 +34,7 @@ jobs:
           context: ./apps/ms-auth
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+          no-cache: true
 
       - name: Build and push MS-Alias
         uses: docker/build-push-action@v5
@@ -41,6 +42,7 @@ jobs:
           context: ./apps/ms-alias
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
+          no-cache: true
 
   deploy-to-ec2:
     needs: build-and-push
