@@ -19,3 +19,23 @@ variable "instance_type" {
   type    = string
   default = "t3.micro"
 }
+
+variable "associate_public_ip_address" {
+  type    = bool
+  default = false
+}
+
+variable "allowed_ports" {
+  type    = list(number)
+  default = [22]
+}
+
+variable "user_data" {
+  type    = string
+  default = ""
+}
+
+variable "key_name" {
+  type    = string
+  default = ""
+}
