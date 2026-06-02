@@ -9,6 +9,8 @@ services:
       - POSTGRES_DB=anonygate_db
     ports:
       - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   mongodb:
     image: bitnami/mongodb:7.0
@@ -19,6 +21,8 @@ services:
       - MONGODB_DATABASE=anonygate_db
     ports:
       - "27017:27017"
+    volumes:
+      - mongodb_data:/bitnami/mongodb
 
   redis:
     image: redis:7-alpine
@@ -73,3 +77,7 @@ services:
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
     ports:
       - "9095:9092"
+
+volumes:
+  postgres_data:
+  mongodb_data:
