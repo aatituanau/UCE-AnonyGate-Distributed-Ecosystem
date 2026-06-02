@@ -9,14 +9,14 @@ jobs:
       - name: Check Docker Logs
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST_MS_CORE_QA }}
+          host: ${{ secrets.DB_POSTGRES_IP_QA }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY_QA }}
           proxy_host: ${{ secrets.EC2_HOST_NGINX_QA }}
           proxy_username: ubuntu
           proxy_key: ${{ secrets.EC2_SSH_KEY_QA }}
           script: |
-            echo "--- DOCKER PS ---"
+            echo "--- DOCKER PS DB ---"
             sudo docker ps -a
-            echo "--- MS-AUTH LOGS ---"
-            sudo docker logs ms-auth --tail 50
+            echo "--- POSTGRES LOGS ---"
+            sudo docker logs postgres --tail 50
