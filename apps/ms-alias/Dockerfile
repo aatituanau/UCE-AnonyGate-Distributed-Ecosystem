@@ -4,13 +4,9 @@ WORKDIR /app
 
 # 1. Copy dependencies files
 COPY package*.json ./
-COPY prisma ./prisma/
 
 # 2. Install dependencies
 RUN npm install
-
-# 3. Generate the Prisma client for the Database
-RUN npx prisma generate
 
 # 4. Copy all the source code of the microservice
 COPY . .
