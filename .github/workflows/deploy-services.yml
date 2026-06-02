@@ -89,9 +89,14 @@ jobs:
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
             sudo docker stop ms-auth || true
             sudo docker rm ms-auth || true
-            sudo docker run -d --name ms-auth -p 3000:3000 --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
+            sudo docker run -d --name ms-auth -p 3000:3000 \
+              -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets[format('DB_POSTGRES_IP{0}', env.ENV_SUFFIX)] }}:5432/anonygate_db?schema=public" \
+              -e JWT_SECRET="SECRET_SUPER_SAFE_2026" \
+              --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AUTH }}:latest
             
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
             sudo docker stop ms-alias || true
             sudo docker rm ms-alias || true
-            sudo docker run -d --name ms-alias -p 3001:3001 --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
+            sudo docker run -d --name ms-alias -p 3001:3001 \
+              -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets[format('DB_POSTGRES_IP{0}', env.ENV_SUFFIX)] }}:5432/anonygate_db?schema=alias" \
+              --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_ALIAS }}:latest
