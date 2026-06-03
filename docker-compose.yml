@@ -12,72 +12,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  mongodb:
-    image: bitnami/mongodb:7.0
-    environment:
-      - MONGODB_ROOT_PASSWORD=mongo_root
-      - MONGODB_USERNAME=anonygate
-      - MONGODB_PASSWORD=anonygate_pass
-      - MONGODB_DATABASE=anonygate_db
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/bitnami/mongodb
-
   redis:
     image: redis:7-alpine
     command: redis-server --requirepass anonygate_pass
     ports:
       - "6379:6379"
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    environment:
-      - RABBITMQ_DEFAULT_USER=anonygate
-      - RABBITMQ_DEFAULT_PASS=anonygate_pass
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-
-  kafka-0:
-    image: bitnami/kafka:3.5
-    environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:9092
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    ports:
-      - "9092:9092"
-
-  kafka-1:
-    image: bitnami/kafka:3.5
-    environment:
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:9092
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    ports:
-      - "9094:9092"
-
-  kafka-2:
-    image: bitnami/kafka:3.5
-    environment:
-      - KAFKA_CFG_NODE_ID=2
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:9092
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    ports:
-      - "9095:9092"
-
 volumes:
   postgres_data:
-  mongodb_data:
