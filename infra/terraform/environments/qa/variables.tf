@@ -4,6 +4,5 @@ variable "environment" {
 }
 
 variable "key_name" {
-  type    = string
-  default = "anonygate-qa-key"
+  type = string
 }

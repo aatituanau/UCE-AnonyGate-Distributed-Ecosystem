@@ -1,0 +1,57 @@
+name: CD Terraform (Infrastructure)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "QA", "main" ]
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/cd-terraform.yml'
+
+jobs:
+  deploy-infra:
+    name: Deploy Infrastructure via Terraform
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'qa' }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set target environment
+        id: set-env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "env_name=prod" >> $GITHUB_OUTPUT
+          else
+            echo "env_name=qa" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+        
+      - name: Setup Terraform State S3 Bucket
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="anonygate-tf-state-${AWS_ACCOUNT_ID}"
+          if ! aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+            echo "Bucket does not exist. Creating..."
+            aws s3api create-bucket --bucket "$BUCKET_NAME" --region us-east-1
+          else
+            echo "Bucket already exists."
+          fi
+          echo "TF_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+          
+      - name: Terraform Init & Apply
+        working-directory: infra/terraform/environments/${{ steps.set-env.outputs.env_name }}
+        run: |
+          terraform init -input=false -backend-config="bucket=${{ env.TF_BUCKET_NAME }}" -backend-config="key=${{ steps.set-env.outputs.env_name }}/terraform.tfstate" -backend-config="region=us-east-1"
+          terraform apply -auto-approve -input=false -var="key_name=${{ secrets.EC2_KEY_NAME }}"
