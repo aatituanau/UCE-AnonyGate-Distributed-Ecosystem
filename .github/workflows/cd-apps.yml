@@ -85,3 +85,12 @@ jobs:
             sudo docker stop ms-alias || true
             sudo docker rm ms-alias || true
             sudo docker run -d --name ms-alias -p 3001:3001 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+            
+            echo "Waint 5 seconds for see if the containers survive..."
+            sleep 5
+            
+            echo "=== LOGS DE MS-AUTH ==="
+            sudo docker logs ms-auth
+            
+            echo "=== LOGS DE MS-ALIAS ==="
+            sudo docker logs ms-alias
