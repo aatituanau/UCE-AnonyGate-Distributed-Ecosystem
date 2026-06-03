@@ -44,6 +44,30 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'qa' }}
     steps:
+      - name: Revive Postgres Database
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DB_POSTGRES_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.EC2_HOST_NGINX }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo docker start postgres || true
+
+      - name: Revive Redis Database
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DB_QUEUES_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.EC2_HOST_NGINX }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo docker start redis || true
+
       - name: Deploy Microservices via Bastion
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -72,7 +96,7 @@ jobs:
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
             
-            # Limpiar disco (soluciona "no space left on device")
+            # Clean disk
             sudo docker system prune -af --volumes
             
             # Pull new images
