@@ -116,6 +116,10 @@ jobs:
             sudo docker rm ms-auth || true
             sudo docker run -d --name ms-auth -p 3000:3000 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
             
+            # Wait for DB push to finish and run seed
+            sleep 10
+            sudo docker exec ms-auth npx prisma db seed || true
+            
             # Restart MS-Alias
             sudo docker stop ms-alias || true
             sudo docker rm ms-alias || true
