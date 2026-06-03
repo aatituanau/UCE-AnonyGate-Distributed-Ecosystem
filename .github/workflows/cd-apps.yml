@@ -66,11 +66,14 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Create isolated env file for Microservices
-            echo "DATABASE_URL_AUTH=\"postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public\"" > .env
-            echo "DATABASE_URL_ALIAS=\"postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias\"" >> .env
-            echo "JWT_SECRET=\"SECRET_SUPER_SAFE_2026\"" >> .env
-            echo "REDIS_HOST=\"${{ secrets.DB_QUEUES_IP }}\"" >> .env
-            echo "REDIS_PORT=\"6379\"" >> .env
+            echo "DATABASE_URL_AUTH=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" > .env
+            echo "DATABASE_URL_ALIAS=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" >> .env
+            echo "JWT_SECRET=SECRET_SUPER_SAFE_2026" >> .env
+            echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
+            echo "REDIS_PORT=6379" >> .env
+            
+            # Limpiar disco (soluciona "no space left on device")
+            sudo docker system prune -af --volumes
             
             # Pull new images
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
