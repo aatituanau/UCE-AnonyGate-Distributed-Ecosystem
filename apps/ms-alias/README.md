@@ -1,98 +1,71 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+<div align="center">
+  <h1>🕵️ MS-Alias (Anonymization Microservice)</h1>
+  <p><strong>The Privacy Engine of AnonyGate</strong></p>
+</div>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+---
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📖 What is this microservice?
 
-## Description
+`ms-alias` is the heart of the university's anonymous complaint system. Its primary function is to receive sensitive complaint data, hide the identity of the complainant by generating a random "Cryptographic Alias", and store this data extremely fast. To achieve sub-millisecond response times, this microservice strictly uses an in-memory database (Redis).
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## ✨ Key Features
 
-## Project setup
+- **Unique Alias Generation:** Algorithms to create untraceable anonymous identifiers (e.g. `ANON-9F3B2`).
+- **In-Memory Storage (Redis):** Instead of using a slow traditional relational database like PostgreSQL, `ms-alias` relies exclusively on **Redis**. This ensures lightning-fast read/write speeds, which is crucial for high-traffic environments where complaints need to be processed instantly.
+- **Hexagonal Architecture (Ports and Adapters):** Strict separation of concerns between Use Cases (Application Layer) and the Database interactions (Infrastructure Layer).
+- **Perimeter Protection:** Although it doesn't generate tokens, it validates the JWT sent by `ms-auth` to ensure the user is authorized to submit data.
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## 🚀 How to use it? (Endpoints)
 
-```bash
-# development
-$ npm run start
+All routes pass through the Bastion/Nginx. The public base route is `http://<BASTION_IP>/aliases/`.
 
-# watch mode
-$ npm run start:dev
+### 1. Generate Anonymous Complaint
+Takes the complaint data, generates the alias, and saves it instantly in Redis.
 
-# production mode
-$ npm run start:prod
-```
+- **Method:** `POST`
+- **Route:** `/aliases/generate`
+- **Required Headers:** `Authorization: Bearer <access_token_from_ms_auth>`
+- **Body (JSON):**
+  ```json
+  {
+    "title": "Harassment in laboratories",
+    "description": "The physics professor asked for favors in exchange for grades.",
+    "faculty": "Engineering"
+  }
+  ```
+- **Successful Response (201 Created):**
+  ```json
+  {
+    "message": "Complaint successfully saved. Please save your secret alias.",
+    "alias": "ANON-8X9P1"
+  }
+  ```
 
-## Run tests
+### 2. Check Complaint Status
+Allows a student to review the status of their complaint using only their secret alias.
 
-```bash
-# unit tests
-$ npm run test
+- **Method:** `GET`
+- **Route:** `/aliases/{your_secret_alias}/status`
+- **Example Route:** `/aliases/ANON-8X9P1/status`
+- **Successful Response (200 OK):**
+  ```json
+  {
+    "alias": "ANON-8X9P1",
+    "status": "PENDING",
+    "faculty": "Engineering",
+    "submittedAt": "2026-06-03T18:00:00Z"
+  }
+  ```
 
-# e2e tests
-$ npm run test:e2e
+---
 
-# test coverage
-$ npm run test:cov
-```
+## 🛠️ Technologies Used
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **Framework:** NestJS
+- **Design Pattern:** Hexagonal Architecture
+- **In-Memory Database:** Redis 
+- **Security Validation:** JWT validation
+- **Containerization:** Docker & Docker Compose
