@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { AliasRepositoryPort } from '../../../application/ports/alias.repository.port';
 import { Alias } from '../../../domain/entities/alias.entity';
