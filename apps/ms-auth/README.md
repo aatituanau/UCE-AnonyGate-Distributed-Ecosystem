@@ -1,98 +1,87 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+<div align="center">
+  <h1>🛡️ MS-Auth (Authentication Microservice)</h1>
+  <p><strong>The Guardian of the AnonyGate Ecosystem</strong></p>
+</div>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+---
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📖 What is this microservice?
 
-## Description
+`ms-auth` is the security core of the entire AnonyGate distributed architecture. It is exclusively responsible for identity management, credential validation, and the issuance of cryptographic tokens (JWT). No external request to the protected microservices can proceed without first passing through the validation of `ms-auth`.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## ✨ Key Features
 
-## Project setup
+- **Strong Cryptography:** Uses `Bcrypt` for secure password hashing.
+- **Stateless Authentication:** Issuance and validation of JSON Web Tokens (JWT).
+- **Modern ORM:** Native integration with **Prisma ORM** for efficient queries and strict typing with PostgreSQL.
+- **Role-Based Access Control (RBAC):** Database structured to handle multiple roles (`admin`, `analyst`, etc.).
+- **Auto-Seeding:** Capability for automatic injection of initial administrative credentials (`seed.ts`).
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## 🚀 How to use it? (Endpoints)
 
-```bash
-# development
-$ npm run start
+All routes pass through the Bastion/Nginx. The public base route is `http://<BASTION_IP>/auth/`.
 
-# watch mode
-$ npm run start:dev
+### 1. Login
+Validates the email and password, returning a JWT to be used in the rest of the microservices.
 
-# production mode
-$ npm run start:prod
-```
+- **Method:** `POST`
+- **Route:** `/auth/login`
+- **Body (JSON):**
+  ```json
+  {
+    "email": "admin@uce.edu.ec",
+    "password": "12345"
+  }
+  ```
+- **Successful Response (200 OK):**
+  ```json
+  {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5c...",
+    "refresh_token": "eyJhbG..."
+  }
+  ```
 
-## Run tests
+### 2. Renew Token (Refresh)
+Generates a new access token before the original one expires.
 
-```bash
-# unit tests
-$ npm run test
+- **Method:** `POST`
+- **Route:** `/auth/refresh`
+- **Body (JSON):**
+  ```json
+  {
+    "email": "admin@uce.edu.ec",
+    "refresh_token": "eyJhbG..."
+  }
+  ```
 
-# e2e tests
-$ npm run test:e2e
+### 3. List Users (Protected VIP Route)
+Proof of concept to validate that the JWT Guardian is working correctly. It rejects any request without a valid token.
 
-# test coverage
-$ npm run test:cov
-```
+- **Method:** `GET`
+- **Route:** `/auth/users`
+- **Required Headers:** `Authorization: Bearer <access_token>`
+- **Successful Response (200 OK):**
+  ```json
+  {
+    "message": "Successful connection from Postman!",
+    "total": 1,
+    "data": [
+      {
+        "id": "uuid-...",
+        "email": "admin@uce.edu.ec"
+      }
+    ]
+  }
+  ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 🛠️ Technologies Used
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **Framework:** NestJS
+- **Database:** PostgreSQL
+- **ORM:** Prisma
+- **Security:** Passport.js, JWT, Bcrypt
+- **Containerization:** Docker & Docker Compose
