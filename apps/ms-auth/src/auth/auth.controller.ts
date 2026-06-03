@@ -23,7 +23,7 @@ export class AuthController {
     // LOGIN ENDPOINT
     @HttpCode(HttpStatus.OK) // Returns 200 OK instead of 201 Created
     @Post('login')
-    login(@Body() loginDto: Record<string, any>) {
+    login(@Body() loginDto: { email: string; password: string }) {
         // We delegate the logic to the AuthService
         return this.authService.login(loginDto.email, loginDto.password);
     }

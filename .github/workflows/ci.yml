@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm' 
           
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -30,13 +31,26 @@ jobs:
           go-version: '1.22'
           
       - name: Install Dependencies
-        run: npm install
-        
-      - name: Turborepo Build
-        run: npx turbo run build
-        
-      - name: Turborepo Lint
-        run: npx turbo run lint
+        run: npm ci 
+
+      - name: Turborepo Build & Lint
+        run: npx turbo run build lint
         
       - name: Turborepo Test
         run: npx turbo run test
+
+  # Added: Automatically validates Terraform code
+  terraform-check:
+    name: Terraform Format & Validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform 
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+      - name: Terraform Fmt
+        run: terraform fmt -check -recursive
