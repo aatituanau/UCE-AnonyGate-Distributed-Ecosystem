@@ -15,7 +15,7 @@ COPY . .
 RUN npm run build
 
 # 6. Expose the port by where NestJS listens
-EXPOSE 3000
+EXPOSE 3001
 
 # 7. Command to start the server in Production mode
 CMD ["npm", "run", "start:prod"]

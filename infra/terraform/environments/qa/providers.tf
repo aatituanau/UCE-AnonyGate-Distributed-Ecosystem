@@ -1,9 +1,5 @@
 terraform {
-  backend "s3" {
-    bucket = "anonygate-tf-state-bucket"
-    key    = "qa/terraform.tfstate"
-    region = "us-east-1"
-  }
+  backend "s3" {}
   required_providers {
     aws = {
       source  = "hashicorp/aws"

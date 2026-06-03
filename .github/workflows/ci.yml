@@ -1,0 +1,42 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [ "QA", "main" ]
+
+jobs:
+  lint-and-test:
+    name: Build, Lint & Test (Monorepo)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Turborepo Build
+        run: npx turbo run build
+        
+      - name: Turborepo Lint
+        run: npx turbo run lint
+        
+      - name: Turborepo Test
+        run: npx turbo run test

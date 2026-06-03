@@ -5,5 +5,4 @@ variable "environment" {
 
 variable "key_name" {
   type    = string
-  default = "anonygate-prod-key"
 }
