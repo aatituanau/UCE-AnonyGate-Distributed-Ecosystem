@@ -39,7 +39,7 @@ jobs:
       - name: Turborepo Test
         run: npx turbo run test
 
-  # Agregado: Valida tu código de Terraform automáticamente
+  # Added: Automatically validates Terraform code
   terraform-check:
     name: Terraform Format & Validate
     runs-on: ubuntu-latest
