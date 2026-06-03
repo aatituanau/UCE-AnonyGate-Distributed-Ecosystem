@@ -6,6 +6,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UnauthorizedException } from '@nestjs/common';
 
+jest.mock('bcrypt');
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: PrismaService;
@@ -64,7 +66,7 @@ describe('AuthService', () => {
         passwordHash: 'hashed-password',
       };
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(service.login('test@test.com', 'wrong-password'))
         .rejects
