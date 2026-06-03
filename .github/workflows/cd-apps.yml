@@ -54,7 +54,11 @@ jobs:
           proxy_username: ubuntu
           proxy_key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo docker start postgres || true
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+            fi
+            sudo docker start postgres || sudo docker run -d --name postgres --restart unless-stopped -v /home/ubuntu/postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=anonygate -e POSTGRES_PASSWORD=anonygate_pass -e POSTGRES_DB=anonygate_db -p 5432:5432 postgres:16-alpine
 
       - name: Revive Redis Database
         uses: appleboy/ssh-action@v1.0.3
@@ -66,7 +70,11 @@ jobs:
           proxy_username: ubuntu
           proxy_key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo docker start redis || true
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+            fi
+            sudo docker start redis || sudo docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
 
       - name: Deploy Microservices via Bastion
         uses: appleboy/ssh-action@v1.0.3
