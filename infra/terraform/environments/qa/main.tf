@@ -18,7 +18,7 @@ module "ec2_1_nginx_bastion" {
   associate_public_ip_address = true
   allowed_ports               = [22, 80]
   key_name                    = var.key_name
-  user_data = <<-EOF
+  user_data                   = <<-EOF
               #!/bin/bash
               apt-get update
               apt-get install -y nginx
@@ -66,7 +66,7 @@ module "ec2_2_ms_core" {
   associate_public_ip_address = false
   allowed_ports               = [22, 3000, 3001, 3002]
   key_name                    = var.key_name
-  user_data = <<-EOF
+  user_data                   = <<-EOF
               #!/bin/bash
               apt-get update
               apt-get install -y docker.io docker-compose
@@ -149,7 +149,7 @@ module "ec2_6_db_postgres" {
   associate_public_ip_address = false
   allowed_ports               = [22, 5432]
   key_name                    = var.key_name
-  user_data = <<-EOF
+  user_data                   = <<-EOF
               #!/bin/bash
               apt-get update
               apt-get install -y docker.io docker-compose
@@ -193,7 +193,7 @@ module "ec2_8_db_queues" {
   associate_public_ip_address = false
   allowed_ports               = [22, 6379, 9092, 5672, 15672]
   key_name                    = var.key_name
-  user_data = <<-EOF
+  user_data                   = <<-EOF
               #!/bin/bash
               apt-get update
               apt-get install -y docker.io docker-compose

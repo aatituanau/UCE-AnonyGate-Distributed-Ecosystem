@@ -15,6 +15,6 @@ variable "private_subnet_cidr" {
 }
 
 variable "availability_zone" {
-  type = string
+  type    = string
   default = "us-east-1a"
 }
