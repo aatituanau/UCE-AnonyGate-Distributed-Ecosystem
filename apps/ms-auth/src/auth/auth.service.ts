@@ -52,8 +52,6 @@ export class AuthService {
         };
     }
 
-    // REFRESH TOKEN LOGIC
-
     async refresh(email: string, plainRefreshToken: string) {
         // 1. Find user with roles for the new JWT payload
         const user = await this.prisma.user.findUnique({
@@ -65,7 +63,7 @@ export class AuthService {
             throw new UnauthorizedException('User not found');
         }
 
-        // 2. Find all active refresh tokens for this user
+        // 2. Find all active (non-revoked, non-expired) refresh tokens for this user
         const activeTokens = await this.prisma.refreshToken.findMany({
             where: {
                 userId: user.id,
@@ -74,12 +72,13 @@ export class AuthService {
             },
         });
 
-        // 3. Compare the plain token against the hashed tokens in DB
+        // 3. Compare the plain token against each hashed token stored in DB
         let isValid = false;
         let usedTokenId: string | undefined;
 
         for (const token of activeTokens) {
-            if (await bcrypt.compare(plainRefreshToken, token.tokenHash)) {
+            const match = await bcrypt.compare(plainRefreshToken, token.tokenHash);
+            if (match) {
                 isValid = true;
                 usedTokenId = token.id;
                 break;
@@ -127,3 +126,4 @@ export class AuthService {
         });
         return { message: 'Logged out successfully' };
     }
+}
