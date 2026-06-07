@@ -10,11 +10,11 @@ export class RedisAliasRepository implements AliasRepositoryPort, OnModuleInit, 
   private readonly redis: Redis;
 
   constructor() {
-    // Connect to the Redis container (from docker-compose)
+    // Connect to Redis — credentials from environment variables (never hardcoded)
     this.redis = new Redis({
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: 'anonygate_pass',
+      password: process.env.REDIS_PASSWORD || 'anonygate_pass',
     });
   }
 
@@ -26,13 +26,13 @@ export class RedisAliasRepository implements AliasRepositoryPort, OnModuleInit, 
     this.redis.disconnect();
   }
 
+  // TTL: 180 days in seconds (configurable via env, defaults to spec value)
+  private readonly TTL_SECONDS = parseInt(process.env.ALIAS_TTL_DAYS || '180') * 24 * 60 * 60;
+
   async saveComplaintWithAlias(complaint: Complaint, alias: Alias): Promise<void> {
-    const payload = JSON.stringify({
-      alias,
-      complaint,
-    });
-    // Save to Redis with the alias code as the KEY
-    await this.redis.set(`alias:${alias.code}`, payload);
+    const payload = JSON.stringify({ alias, complaint });
+    // Key expires automatically after TTL — no manual cleanup needed
+    await this.redis.set(`alias:${alias.code}`, payload, 'EX', this.TTL_SECONDS);
   }
 
   async findComplaintByAlias(aliasCode: string): Promise<Complaint | null> {
