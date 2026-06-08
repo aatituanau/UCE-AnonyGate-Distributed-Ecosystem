@@ -9,9 +9,16 @@ export default function Denounce() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  interface TrackingStatus {
+    alias: string;
+    status: string;
+    faculty: string;
+    submittedAt: string | number | Date;
+  }
+
   // Status tracking state
   const [trackingAlias, setTrackingAlias] = useState('');
-  const [trackingStatus, setTrackingStatus] = useState<Record<string, unknown> | null>(null);
+  const [trackingStatus, setTrackingStatus] = useState<TrackingStatus | null>(null);
   const [trackingError, setTrackingError] = useState('');
 
   const handleDenounce = async (e: React.FormEvent) => {

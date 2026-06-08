@@ -1,9 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { Shield, RefreshCw, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
+interface TokenPayload {
+  email: string;
+  sub: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
+
 export default function Dashboard() {
-  const [tokenData, setTokenData] = useState<Record<string, unknown> | null>(() => {
+  const [tokenData, setTokenData] = useState<TokenPayload | null>(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
       try {
@@ -40,7 +48,7 @@ export default function Dashboard() {
       localStorage.setItem('refresh_token', res.data.refresh_token);
 
       // Update state
-      const payload = JSON.parse(atob(res.data.access_token.split('.')[1]));
+      const payload = JSON.parse(atob(res.data.access_token.split('.')[1])) as TokenPayload;
       setTokenData(payload);
 
       setSuccessMsg('Tokens rotados exitosamente. ¡La seguridad funciona!');
