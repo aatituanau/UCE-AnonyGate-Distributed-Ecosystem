@@ -11,7 +11,7 @@ export default function Denounce() {
 
   // Status tracking state
   const [trackingAlias, setTrackingAlias] = useState('');
-  const [trackingStatus, setTrackingStatus] = useState<any>(null);
+  const [trackingStatus, setTrackingStatus] = useState<Record<string, unknown> | null>(null);
   const [trackingError, setTrackingError] = useState('');
 
   const handleDenounce = async (e: React.FormEvent) => {
@@ -24,8 +24,9 @@ export default function Denounce() {
       const res = await axios.post(`${API_ALIAS}/aliases/generate`, formData);
       setResultAlias(res.data.alias);
       setFormData({ title: '', description: '', faculty: '' }); // reset form
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error connecting to ms-alias');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Error connecting to ms-alias');
     } finally {
       setLoading(false);
     }
@@ -40,8 +41,9 @@ export default function Denounce() {
       const API_ALIAS = import.meta.env.VITE_API_ALIAS_URL || 'http://localhost:3001';
       const res = await axios.get(`${API_ALIAS}/aliases/${trackingAlias}/status`);
       setTrackingStatus(res.data);
-    } catch (err: any) {
-      setTrackingError(err.response?.data?.message || 'Alias not found');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setTrackingError(e.response?.data?.message || 'Alias not found');
     }
   };
 

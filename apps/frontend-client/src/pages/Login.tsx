@@ -28,8 +28,9 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
         setAuth(true);
         navigate('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error connecting to server');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Error connecting to server');
     } finally {
       setLoading(false);
     }

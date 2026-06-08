@@ -3,23 +3,22 @@ import axios from 'axios';
 import { Shield, RefreshCw, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 export default function Dashboard() {
-  const [tokenData, setTokenData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
-  useEffect(() => {
-    // Parse the JWT to show user info
+  const [tokenData, setTokenData] = useState<Record<string, unknown> | null>(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setTokenData(payload);
+        return JSON.parse(atob(token.split('.')[1]));
       } catch (e) {
         console.error("Failed to parse token", e);
+        return null;
       }
     }
-  }, []);
+    return null;
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleRefresh = async () => {
     setLoading(true);
@@ -47,8 +46,9 @@ export default function Dashboard() {
       setSuccessMsg('Tokens rotados exitosamente. ¡La seguridad funciona!');
       setTimeout(() => setSuccessMsg(''), 4000);
 
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error refrescando token. Por favor inicia sesión de nuevo.');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Error refrescando token. Por favor inicia sesión de nuevo.');
     } finally {
       setLoading(false);
     }
