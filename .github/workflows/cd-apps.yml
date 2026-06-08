@@ -18,7 +18,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [ms-auth, ms-alias]
+        service: [ms-auth, ms-alias, frontend-client]
     
     steps:
       - uses: actions/checkout@v4
@@ -142,3 +142,34 @@ jobs:
 
             echo "=== LOGS DE MS-ALIAS ==="
             sudo docker logs ms-alias
+
+      - name: Deploy Frontend to Nginx Host
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST_NGINX }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Waiting for cloud-init to finish..."
+            while [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 5; done
+            
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found! Forcing installation..."
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+            fi
+            
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-frontend-client:latest
+            
+            sudo docker stop frontend-client || true
+            sudo docker rm frontend-client || true
+            
+            # Run the frontend container on port 8080 of the Nginx machine
+            sudo docker run -d --name frontend-client \
+              -p 8080:80 \
+              -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_NGINX }}:3000" \
+              -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}:3001" \
+              --restart unless-stopped \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-frontend-client:latest

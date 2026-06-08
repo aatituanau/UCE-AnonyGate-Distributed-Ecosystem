@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+# Print received variables for debugging (excluding secrets)
+echo "Injecting environment variables into the frontend..."
+echo "VITE_API_AUTH_URL: $VITE_API_AUTH_URL"
+echo "VITE_API_ALIAS_URL: $VITE_API_ALIAS_URL"
+
+# Find JS files in the Vite build directory
+for file in /usr/share/nginx/html/assets/*.js; do
+  if [ -f "$file" ]; then
+    # Use sed to replace localhost fallbacks with the injected variables
+    # Only if the variables exist
+    if [ ! -z "$VITE_API_AUTH_URL" ]; then
+      sed -i "s|http://localhost:3000|${VITE_API_AUTH_URL}|g" "$file"
+    fi
+    
+    if [ ! -z "$VITE_API_ALIAS_URL" ]; then
+      sed -i "s|http://localhost:3001|${VITE_API_ALIAS_URL}|g" "$file"
+    fi
+  fi
+done
+
+echo "Injection completed. Starting Nginx..."
+
+# Execute the Docker CMD command (which starts Nginx by default)
+exec "$@"
