@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAMESPACE: ${{ github.actor }}/anonygate
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}/anonygate
 
 jobs:
   build-and-push:
