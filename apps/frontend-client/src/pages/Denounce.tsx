@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle, Shield } from 'lucide-react';
+import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function Denounce() {
   const [formData, setFormData] = useState({ title: '', description: '', faculty: '' });
