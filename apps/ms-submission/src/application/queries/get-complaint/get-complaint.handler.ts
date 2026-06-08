@@ -1,7 +1,8 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { GetComplaintQuery } from './get-complaint.query';
 import { Inject, NotFoundException } from '@nestjs/common';
-import { COMPLAINT_REPOSITORY, ComplaintRepositoryPort } from '../../../domain/ports/outbound/complaint.repository.port';
+import { COMPLAINT_REPOSITORY } from '../../../domain/ports/outbound/complaint.repository.port';
+import type { ComplaintRepositoryPort } from '../../../domain/ports/outbound/complaint.repository.port';
 
 @QueryHandler(GetComplaintQuery)
 export class GetComplaintHandler implements IQueryHandler<GetComplaintQuery> {

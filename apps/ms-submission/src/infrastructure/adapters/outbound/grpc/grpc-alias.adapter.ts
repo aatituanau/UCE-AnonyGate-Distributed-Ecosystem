@@ -1,18 +1,41 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Client } from '@nestjs/microservices';
+import type { ClientGrpc } from '@nestjs/microservices';
+import { Transport } from '@nestjs/microservices';
+import { join } from 'path';
 import { AliasServicePort } from '../../../../domain/ports/outbound/alias.service.port';
-// import * as grpc from '@grpc/grpc-js';
-// import * as protoLoader from '@grpc/proto-loader';
+import { firstValueFrom } from 'rxjs';
+
+interface AliasGrpcService {
+  validateToken(data: { token: string }): any;
+}
 
 @Injectable()
 export class GrpcAliasAdapter implements AliasServicePort, OnModuleInit {
+  @Client({
+    transport: Transport.GRPC,
+    options: {
+      package: 'alias',
+      protoPath: join(__dirname, '../../../../../../shared-proto/alias.proto'),
+      url: '0.0.0.0:50051',
+    },
+  })
+  private client: ClientGrpc;
+
+  private aliasService: AliasGrpcService;
+
   async onModuleInit() {
-    // Initializing gRPC client
+    this.aliasService = this.client.getService<AliasGrpcService>('AliasService');
   }
 
   async validateToken(token: string): Promise<boolean> {
-    // TODO: implement real gRPC call to MS-02
-    // Returning true for now to allow local testing
-    console.log(`[gRPC Mock] Validating token: ${token}`);
-    return true; 
+    try {
+      console.log(`[gRPC Client] Asking MS-02 to validate token: ${token}`);
+      const response = await firstValueFrom(this.aliasService.validateToken({ token })) as any;
+      return response.isValid;
+    } catch (error) {
+      console.error('[gRPC Client] Error validating token', error);
+      return false;
+    }
   }
 }
