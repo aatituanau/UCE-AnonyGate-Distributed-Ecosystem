@@ -30,6 +30,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           
+      - name: Copy shared-proto to service context
+        run: cp -r apps/shared-proto apps/${{ matrix.service }}/shared-proto || true
+          
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:

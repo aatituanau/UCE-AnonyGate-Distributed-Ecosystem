@@ -8,6 +8,9 @@ COPY package*.json ./
 # 2. Install dependencies
 RUN npm install
 
+# 3. Copy shared-proto
+COPY shared-proto /shared-proto
+
 # 4. Copy all the source code of the microservice
 COPY . .
 

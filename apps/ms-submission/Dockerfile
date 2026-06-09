@@ -12,6 +12,9 @@ RUN npm install
 # 3. Generate the Prisma client for the Database (into src/generated/prisma)
 RUN npx prisma generate
 
+# 3.1 Copy shared-proto
+COPY shared-proto /shared-proto
+
 # 4. Copy all the source code of the microservice
 COPY . .
 
