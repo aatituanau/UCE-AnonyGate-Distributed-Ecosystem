@@ -25,6 +25,12 @@ for file in /usr/share/nginx/html/assets/*.js; do
   fi
 done
 
+# Inject backend IP into Nginx configuration for Reverse Proxy
+if [ ! -z "$MS_CORE_IP" ]; then
+  echo "Injecting MS_CORE_IP: $MS_CORE_IP into Nginx proxy_pass..."
+  sed -i "s|MS_CORE_IP|${MS_CORE_IP}|g" /etc/nginx/conf.d/default.conf
+fi
+
 echo "Injection completed. Starting Nginx..."
 
 # Execute the Docker CMD command (which starts Nginx by default)
