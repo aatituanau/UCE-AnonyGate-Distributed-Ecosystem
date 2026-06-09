@@ -18,6 +18,10 @@ for file in /usr/share/nginx/html/assets/*.js; do
     if [ ! -z "$VITE_API_ALIAS_URL" ]; then
       sed -i "s|http://localhost:3001|${VITE_API_ALIAS_URL}|g" "$file"
     fi
+    
+    if [ ! -z "$VITE_API_SUBMISSION_URL" ]; then
+      sed -i "s|http://localhost:3003|${VITE_API_SUBMISSION_URL}|g" "$file"
+    fi
   fi
 done
 
