@@ -15,7 +15,7 @@ COPY shared-proto /shared-proto
 COPY . .
 
 # 5. Compile the TypeScript code to JavaScript
-RUN npm run build
+RUN npm run build && npm cache clean --force && rm -rf /root/.npm
 
 # 6. Expose the port by where NestJS listens
 EXPOSE 3001
