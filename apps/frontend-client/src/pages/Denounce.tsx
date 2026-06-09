@@ -27,13 +27,24 @@ export default function Denounce() {
     setError('');
 
     try {
+      // 1. Get Secret Alias from MS-02 (Alias Service)
       const API_ALIAS = import.meta.env.VITE_API_ALIAS_URL || 'http://localhost:3001';
-      const res = await axios.post(`${API_ALIAS}/aliases/generate`, formData);
-      setResultAlias(res.data.alias);
+      const aliasRes = await axios.post(`${API_ALIAS}/aliases/generate`, formData);
+      const secretAlias = aliasRes.data.alias;
+
+      // 2. Submit Full Payload to MS-04 (Submission Service)
+      const API_SUBMISSION = import.meta.env.VITE_API_SUBMISSION_URL || 'http://localhost:3003';
+      await axios.post(`${API_SUBMISSION}/api/v1/complaints`, {
+        aliasToken: secretAlias,
+        payload: formData
+      });
+
+      setResultAlias(secretAlias);
       setFormData({ title: '', description: '', faculty: '' }); // reset form
     } catch (err: unknown) {
+      console.error(err);
       const e = err as { response?: { data?: { message?: string } } };
-      setError(e.response?.data?.message || 'Error connecting to ms-alias');
+      setError(e.response?.data?.message || 'Error processing your complaint. Please try again.');
     } finally {
       setLoading(false);
     }

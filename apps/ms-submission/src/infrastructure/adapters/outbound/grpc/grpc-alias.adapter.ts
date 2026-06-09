@@ -16,7 +16,7 @@ export class GrpcAliasAdapter implements AliasServicePort, OnModuleInit {
     transport: Transport.GRPC,
     options: {
       package: 'alias',
-      protoPath: join(__dirname, '../../../../../../shared-proto/alias.proto'),
+      protoPath: join(process.cwd(), '../shared-proto/alias.proto'),
       url: '0.0.0.0:50051',
     },
   })
