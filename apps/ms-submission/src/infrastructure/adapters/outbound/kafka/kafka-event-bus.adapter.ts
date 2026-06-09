@@ -16,12 +16,9 @@ export class KafkaEventBusAdapter implements EventBusPort, OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    try {
-      await this.producer.connect();
-      console.log('Successfully connected to Kafka');
-    } catch (error) {
-      console.error('Failed to connect to Kafka on startup:', error);
-    }
+    this.producer.connect()
+      .then(() => console.log('Successfully connected to Kafka'))
+      .catch(error => console.error('Failed to connect to Kafka on startup:', error));
   }
 
   async onModuleDestroy() {
