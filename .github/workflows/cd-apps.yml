@@ -197,8 +197,8 @@ jobs:
             # Run the frontend container on port 8080 of the Nginx machine
             sudo docker run -d --name frontend-client \
               -p 8080:80 \
-              -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_NGINX }}:3003" \
+              -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_MS_CORE }}:3000" \
+              -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_MS_CORE }}:3001" \
+              -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_MS_CORE }}:3003" \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-frontend-client:latest
