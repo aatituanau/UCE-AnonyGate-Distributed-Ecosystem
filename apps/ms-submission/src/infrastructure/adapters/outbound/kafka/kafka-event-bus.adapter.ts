@@ -26,11 +26,15 @@ export class KafkaEventBusAdapter implements EventBusPort, OnModuleInit, OnModul
   }
 
   async publish(topic: string, event: any): Promise<void> {
-    await this.producer.send({
-      topic,
-      messages: [
-        { value: JSON.stringify(event) }
-      ],
-    });
+    try {
+      await this.producer.send({
+        topic,
+        messages: [
+          { value: JSON.stringify(event) }
+        ],
+      });
+    } catch (error) {
+      console.error(`Failed to publish event to topic ${topic}:`, error);
+    }
   }
 }
