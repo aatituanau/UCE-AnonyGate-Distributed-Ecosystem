@@ -1,26 +1,20 @@
-FROM node:20-alpine
-
+# Stage 1: Builder
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# 1. Copy dependencies files
 COPY package*.json ./
 COPY prisma ./prisma/
-
-# 2. Install dependencies
 RUN npm install
-
-# 3. Generate the Prisma client for the Database
 RUN npx prisma generate
-
-# 4. Copy all the source code of the microservice
 COPY . .
+RUN npm run build
 
-# 5. Compile the TypeScript code to JavaScript
-RUN npm run build && npm cache clean --force && rm -rf /root/.npm
-
-# 6. Expose the port by where NestJS listens
+# Stage 2: Production
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm install --omit=dev && npm cache clean --force
+RUN npx prisma generate
+COPY --from=builder /app/dist ./dist
 EXPOSE 3000
-
-# 7. Command to start the server in Production mode
-# Only push schema automatically, NEVER seed automatically to avoid overriding real data
 CMD sh -c "npx prisma db push && npm run start:prod"
