@@ -16,7 +16,7 @@ module "ec2_1_nginx_bastion" {
   subnet_id                   = module.vpc.public_subnet_id
   instance_type               = "t2.micro"
   associate_public_ip_address = true
-  allowed_ports               = [22, 80]
+  allowed_ports               = [22, 80, 8080]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
@@ -64,7 +64,7 @@ module "ec2_2_ms_core" {
   subnet_id                   = module.vpc.private_subnet_id
   instance_type               = "t2.micro"
   associate_public_ip_address = false
-  allowed_ports               = [22, 3000, 3001, 3002]
+  allowed_ports               = [22, 3000, 3001, 3002, 3003]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
@@ -189,7 +189,7 @@ module "ec2_8_db_queues" {
   instance_name               = "ec2-8-db-queues"
   vpc_id                      = module.vpc.vpc_id
   subnet_id                   = module.vpc.private_subnet_id
-  instance_type               = "t3.micro"
+  instance_type               = "t3.small"
   associate_public_ip_address = false
   allowed_ports               = [22, 6379, 9092, 5672, 15672]
   key_name                    = var.key_name
@@ -199,8 +199,24 @@ module "ec2_8_db_queues" {
               apt-get install -y docker.io docker-compose
               systemctl start docker
               systemctl enable docker
+              
+              # Get Private IP for Kafka Advertised Listeners
+              PRIVATE_IP=$(hostname -I | awk '{print $1}')
+              
               # Start Redis
               docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
-              # Kafka and RabbitMQ can be started here later
+              
+              # Start Zookeeper
+              docker run -d --name zookeeper --restart unless-stopped -p 2181:2181 -e ZOOKEEPER_CLIENT_PORT=2181 -e ZOOKEEPER_TICK_TIME=2000 confluentinc/cp-zookeeper:7.5.0
+              
+              # Start Kafka
+              docker run -d --name kafka --restart unless-stopped \
+                -p 9092:9092 \
+                -e KAFKA_BROKER_ID=1 \
+                -e KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 \
+                -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://$PRIVATE_IP:9092 \
+                -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+                --link zookeeper \
+                confluentinc/cp-kafka:7.5.0
               EOF
 }

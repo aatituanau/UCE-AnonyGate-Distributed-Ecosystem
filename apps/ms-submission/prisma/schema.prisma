@@ -1,0 +1,22 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Complaint {
+  id          String   @id @default(uuid())
+  aliasToken  String   @unique // The token validated by gRPC with ms-alias
+  
+  // JSONB: Saves the form from MS-03 dynamically without rigid structure
+  payload     Json     
+
+  status      String   @default("RECEIVED") 
+  createdAt   DateTime @default(now())
+}

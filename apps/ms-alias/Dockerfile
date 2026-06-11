@@ -1,21 +1,18 @@
-FROM node:20-alpine
-
+# Stage 1: Builder
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# 1. Copy dependencies files
 COPY package*.json ./
-
-# 2. Install dependencies
 RUN npm install
-
-# 4. Copy all the source code of the microservice
+COPY shared-proto /shared-proto
 COPY . .
-
-# 5. Compile the TypeScript code to JavaScript
 RUN npm run build
 
-# 6. Expose the port by where NestJS listens
+# Stage 2: Production
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --omit=dev && npm cache clean --force
+COPY shared-proto /shared-proto
+COPY --from=builder /app/dist ./dist
 EXPOSE 3001
-
-# 7. Command to start the server in Production mode
 CMD ["npm", "run", "start:prod"]

@@ -18,7 +18,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [ms-auth, ms-alias, frontend-client]
+        service: [ms-auth, ms-alias, ms-submission, frontend-client]
     
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +29,9 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Copy shared-proto to service context
+        run: cp -r apps/shared-proto apps/${{ matrix.service }}/shared-proto || true
           
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -63,7 +66,7 @@ jobs:
             # Data is persisted in /home/ubuntu/postgres_data (bind-mount, survives prune)
             sudo docker start postgres || sudo docker run -d --name postgres --restart unless-stopped -v /home/ubuntu/postgres_data:/var/lib/postgresql/data -e POSTGRES_USER=anonygate -e POSTGRES_PASSWORD=anonygate_pass -e POSTGRES_DB=anonygate_db -p 5432:5432 postgres:16-alpine
 
-      - name: Start Redis Database
+      - name: Start Redis and Kafka Brokers
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DB_QUEUES_IP }}
@@ -78,8 +81,11 @@ jobs:
               sudo apt-get update
               sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
             fi
-            # Start existing container, or create it if it doesn't exist yet
+            
+            # Redis
             sudo docker start redis || sudo docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7-alpine redis-server --requirepass anonygate_pass
+            
+            # Zookeeper & Kafka are now provisioned via Terraform user_data
 
       - name: Deploy Microservices via Bastion
         uses: appleboy/ssh-action@v1.0.3
@@ -105,26 +111,29 @@ jobs:
             # Build env file from GitHub Secrets — never hardcode credentials
             echo "DATABASE_URL_AUTH=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" > .env
             echo "DATABASE_URL_ALIAS=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" >> .env
+            echo "DATABASE_URL_SUBMISSION=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
+            echo "KAFKA_BROKER=${{ secrets.DB_QUEUES_IP }}:9092" >> .env
 
             # Free disk space before pulling new images
             sudo docker system prune -af --volumes
 
+            # Create Docker network if it doesn't exist
+            sudo docker network create anonygate-net || true
+
             # Pull latest images from GHCR
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
 
             # Deploy MS-Auth
             sudo docker stop ms-auth || true
             sudo docker rm ms-auth || true
-            sudo docker run -d --name ms-auth -p 3000:3000 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
+            sudo docker run -d --name ms-auth --network anonygate-net -p 3000:3000 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
 
             # ── DATABASE SEED ─────────────────────────────────────────────────
-            # Runs on every deploy (QA and PROD). Safe because all inserts use
-            # upsert — existing data is never overwritten or deleted.
-            # Admin and analysts are created on first deploy, ignored on subsequent ones.
             sleep 10
             echo "Running database seed..."
             sudo docker exec ms-auth npx prisma db seed || true
@@ -132,7 +141,16 @@ jobs:
             # Restart MS-Alias
             sudo docker stop ms-alias || true
             sudo docker rm ms-alias || true
-            sudo docker run -d --name ms-alias -p 3001:3001 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+            sudo docker run -d --name ms-alias --network anonygate-net -p 3001:3001 -p 50051:50051 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+
+            # Deploy MS-Submission
+            sudo docker stop ms-submission || true
+            sudo docker rm ms-submission || true
+            sudo docker run -d --name ms-submission --network anonygate-net -p 3003:3003 --env-file .env -e ALIAS_GRPC_URL="ms-alias:50051" -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+            
+            echo "Running MS-Submission database push..."
+            sleep 5
+            sudo docker exec ms-submission npx prisma db push --schema=prisma/schema.prisma || true
 
             echo "Waiting 5 seconds to see if containers survive..."
             sleep 5
@@ -142,6 +160,9 @@ jobs:
 
             echo "=== LOGS DE MS-ALIAS ==="
             sudo docker logs ms-alias
+
+            echo "=== LOGS DE MS-SUBMISSION ==="
+            sudo docker logs ms-submission
 
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3
@@ -169,7 +190,9 @@ jobs:
             # Run the frontend container on port 8080 of the Nginx machine
             sudo docker run -d --name frontend-client \
               -p 8080:80 \
-              -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
+              -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_NGINX }}:8080" \
+              -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}:8080" \
+              -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_NGINX }}:8080" \
+              -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-frontend-client:latest
