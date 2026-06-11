@@ -16,7 +16,7 @@ module "ec2_1_nginx_bastion" {
   subnet_id                   = module.vpc.public_subnet_id
   instance_type               = "t2.micro"
   associate_public_ip_address = true
-  allowed_ports               = [22, 80]
+  allowed_ports               = [22, 80, 8080]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
