@@ -19,7 +19,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('aliases/api/docs', app, document);
 
   // Connect gRPC microservice
   app.connectMicroservice<MicroserviceOptions>({
