@@ -64,7 +64,7 @@ module "ec2_2_ms_core" {
   subnet_id                   = module.vpc.private_subnet_id
   instance_type               = "t2.micro"
   associate_public_ip_address = false
-  allowed_ports               = [22, 3000, 3001, 3002]
+  allowed_ports               = [22, 3000, 3001, 3002, 3003]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
