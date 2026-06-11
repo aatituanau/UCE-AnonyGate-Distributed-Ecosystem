@@ -29,6 +29,8 @@
     "@nestjs/cqrs": "^11.0.3",
     "@nestjs/microservices": "^11.1.26",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.4.4",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "kafkajs": "^2.2.4",

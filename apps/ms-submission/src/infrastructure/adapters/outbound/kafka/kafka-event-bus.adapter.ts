@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { EventBusPort } from '../../../../domain/ports/outbound/event-bus.port';
 import { Kafka, Producer } from 'kafkajs';
 
@@ -6,6 +6,7 @@ import { Kafka, Producer } from 'kafkajs';
 export class KafkaEventBusAdapter implements EventBusPort, OnModuleInit, OnModuleDestroy {
   private kafka: Kafka;
   private producer: Producer;
+  private readonly logger = new Logger(KafkaEventBusAdapter.name);
 
   constructor() {
     this.kafka = new Kafka({
@@ -17,8 +18,8 @@ export class KafkaEventBusAdapter implements EventBusPort, OnModuleInit, OnModul
 
   async onModuleInit() {
     this.producer.connect()
-      .then(() => console.log('Successfully connected to Kafka'))
-      .catch(error => console.error('Failed to connect to Kafka on startup:', error));
+      .then(() => this.logger.log('Successfully connected to Kafka'))
+      .catch(error => this.logger.error('Failed to connect to Kafka on startup:', error));
   }
 
   async onModuleDestroy() {
@@ -26,11 +27,13 @@ export class KafkaEventBusAdapter implements EventBusPort, OnModuleInit, OnModul
   }
 
   async publish(topic: string, event: any): Promise<void> {
+    this.logger.log(`[EVENT OUT] Publishing event to topic "${topic}": ${JSON.stringify(event)}`);
     await this.producer.send({
       topic,
       messages: [
         { value: JSON.stringify(event) }
       ],
     });
+    this.logger.log(`[EVENT OUT] Successfully published to topic "${topic}"`);
   }
 }
