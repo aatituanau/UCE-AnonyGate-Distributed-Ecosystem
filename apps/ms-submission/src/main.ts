@@ -15,9 +15,10 @@ async function bootstrap() {
     .setTitle('MS-Submission API')
     .setDescription('Complaint Submission Microservice')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/v1/complaints/docs', app, document);
+  SwaggerModule.setup('complaints/api/docs', app, document);
 
   await app.listen(process.env.PORT ?? 3003);
 }

@@ -208,13 +208,23 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Add /api/ route for ms-submission API endpoints
             if ! sudo grep -q "location /api/" /etc/nginx/sites-available/default; then
               sudo sed -i "/location \/aliases\//a\\                location \/api\/ {\n                    proxy_pass http:\/\/${{ secrets.EC2_HOST_MS_CORE }}:3003;\n                    proxy_set_header Host \$host;\n                    proxy_set_header X-Real-IP \$remote_addr;\n                }" /etc/nginx/sites-available/default
-              sudo nginx -t && sudo systemctl reload nginx
               echo "Nginx: /api/ route added for ms-submission"
             else
               echo "Nginx: /api/ route already present, skipping"
             fi
+
+            # Add /complaints/ route for ms-submission Swagger UI (complaints/api/docs)
+            if ! sudo grep -q "location /complaints/" /etc/nginx/sites-available/default; then
+              sudo sed -i "/location \/api\//a\\                location \/complaints\/ {\n                    proxy_pass http:\/\/${{ secrets.EC2_HOST_MS_CORE }}:3003\/complaints\/;\n                    proxy_set_header Host \$host;\n                    proxy_set_header X-Real-IP \$remote_addr;\n                }" /etc/nginx/sites-available/default
+              echo "Nginx: /complaints/ route added for ms-submission Swagger"
+            else
+              echo "Nginx: /complaints/ route already present, skipping"
+            fi
+
+            sudo nginx -t && sudo systemctl reload nginx
 
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3
