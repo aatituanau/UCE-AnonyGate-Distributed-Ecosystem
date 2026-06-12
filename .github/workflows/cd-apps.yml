@@ -201,6 +201,21 @@ jobs:
             echo "=== LOGS DE MS-SUBMISSION ==="
             sudo docker logs ms-submission
 
+      - name: Update Nginx Routes on Bastion
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST_NGINX }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            if ! sudo grep -q "location /api/" /etc/nginx/sites-available/default; then
+              sudo sed -i "/location \/aliases\//a\\                location \/api\/ {\n                    proxy_pass http:\/\/${{ secrets.EC2_HOST_MS_CORE }}:3003;\n                    proxy_set_header Host \$host;\n                    proxy_set_header X-Real-IP \$remote_addr;\n                }" /etc/nginx/sites-available/default
+              sudo nginx -t && sudo systemctl reload nginx
+              echo "Nginx: /api/ route added for ms-submission"
+            else
+              echo "Nginx: /api/ route already present, skipping"
+            fi
+
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3
         with:
