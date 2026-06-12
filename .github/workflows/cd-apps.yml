@@ -132,25 +132,58 @@ jobs:
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
 
-            # Deploy MS-Auth
-            sudo docker stop ms-auth || true
-            sudo docker rm ms-auth || true
-            sudo docker run -d --name ms-auth --network anonygate-net -p 3000:3000 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
+            # Deploy MS-Auth (Zero Downtime Strategy)
+            echo "Starting Replica Test for ms-auth..."
+            sudo docker run -d --name ms-auth-test --network anonygate-net --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-auth-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-auth-test
+              sudo docker stop ms-auth || true
+              sudo docker rm ms-auth || true
+              sudo docker run -d --name ms-auth --network anonygate-net -p 3000:3000 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-auth-test
+              exit 1
+            fi
 
             # ── DATABASE SEED ─────────────────────────────────────────────────
             sleep 10
             echo "Running database seed..."
             sudo docker exec ms-auth npx prisma db seed || true
 
-            # Restart MS-Alias
-            sudo docker stop ms-alias || true
-            sudo docker rm ms-alias || true
-            sudo docker run -d --name ms-alias --network anonygate-net -p 3001:3001 -p 50051:50051 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+            # Deploy MS-Alias (Zero Downtime Strategy)
+            echo "Starting Replica Test for ms-alias..."
+            sudo docker run -d --name ms-alias-test --network anonygate-net --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-alias-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-alias-test
+              sudo docker stop ms-alias || true
+              sudo docker rm ms-alias || true
+              sudo docker run -d --name ms-alias --network anonygate-net -p 3001:3001 -p 50051:50051 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-alias-test
+              exit 1
+            fi
 
-            # Deploy MS-Submission
-            sudo docker stop ms-submission || true
-            sudo docker rm ms-submission || true
-            sudo docker run -d --name ms-submission --network anonygate-net -p 3003:3003 --env-file .env -e ALIAS_GRPC_URL="ms-alias:50051" -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+            # Deploy MS-Submission (Zero Downtime Strategy)
+            echo "Starting Replica Test for ms-submission..."
+            sudo docker run -d --name ms-submission-test --network anonygate-net --env-file .env -e ALIAS_GRPC_URL="ms-alias:50051" -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-submission-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-submission-test
+              sudo docker stop ms-submission || true
+              sudo docker rm ms-submission || true
+              sudo docker run -d --name ms-submission --network anonygate-net -p 3003:3003 --env-file .env -e ALIAS_GRPC_URL="ms-alias:50051" -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-submission-test
+              exit 1
+            fi
             
             echo "Running MS-Submission database push..."
             sleep 5
