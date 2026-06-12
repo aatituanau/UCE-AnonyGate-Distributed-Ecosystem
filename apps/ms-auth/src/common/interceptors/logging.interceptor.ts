@@ -11,7 +11,7 @@ export class LoggingInterceptor implements NestInterceptor {
     let requestInfo = 'Unknown context';
 
     if (type === 'http') {
-      const request = context.switchToHttp().getRequest();
+      const request = context.switchToHttp().getRequest<{ method: string; url: string }>();
       requestInfo = `HTTP ${request.method} ${request.url}`;
     } else if (type === 'rpc') {
       requestInfo = `gRPC Call`;
@@ -25,7 +25,7 @@ export class LoggingInterceptor implements NestInterceptor {
       .pipe(
         tap({
           next: () => this.logger.log(`[RESPONSE OUT] Completed: ${requestInfo} [${Date.now() - now}ms]`),
-          error: (error) => this.logger.error(`[ERROR OUT] Failed: ${requestInfo} - Reason: ${error.message} [${Date.now() - now}ms]`),
+          error: (error: Error) => this.logger.error(`[ERROR OUT] Failed: ${requestInfo} - Reason: ${error?.message || 'Unknown Error'} [${Date.now() - now}ms]`),
         }),
       );
   }
