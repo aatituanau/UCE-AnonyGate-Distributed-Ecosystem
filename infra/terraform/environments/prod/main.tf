@@ -1,10 +1,10 @@
 module "vpc" {
   source              = "../../modules/vpc"
   environment         = var.environment
-  vpc_cidr            = "10.2.0.0/16"
-  public_subnet_cidr  = "10.2.1.0/24"
-  private_subnet_cidr = "10.2.2.0/24"
-  availability_zone   = "us-east-1a"
+  vpc_cidr             = "10.2.0.0/16"
+  public_subnet_cidrs  = ["10.2.1.0/24", "10.2.3.0/24"]
+  private_subnet_cidrs = ["10.2.2.0/24", "10.2.4.0/24"]
+  availability_zones   = ["us-east-1a", "us-east-1b"]
 }
 
 # --- EC2-1: PUBLIC SUBNET (Nginx + Bastion) ---
@@ -13,7 +13,7 @@ module "ec2_1_nginx_bastion" {
   environment                 = var.environment
   instance_name               = "ec2-1-nginx-bastion"
   vpc_id                      = module.vpc.vpc_id
-  subnet_id                   = module.vpc.public_subnet_id
+  subnet_id                   = module.vpc.public_subnet_ids[0]
   instance_type               = "t2.micro"
   associate_public_ip_address = true
   allowed_ports               = [22, 80, 8080]
@@ -61,7 +61,7 @@ module "ec2_2_ms_core" {
   environment                 = var.environment
   instance_name               = "ec2-2-ms-core"
   vpc_id                      = module.vpc.vpc_id
-  subnet_id                   = module.vpc.private_subnet_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 3000, 3001, 3002, 3003]
@@ -82,7 +82,7 @@ module "ec2_2_ms_core" {
 #   environment                 = var.environment
 #   instance_name               = "ec2-3-ms-processing"
 #   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_id
+#   subnet_id                   = module.vpc.private_subnet_ids[0]
 #   instance_type               = "t2.micro"
 #   associate_public_ip_address = false
 #   allowed_ports               = [22, 3003, 3004, 3005]
@@ -103,7 +103,7 @@ module "ec2_2_ms_core" {
 #   environment                 = var.environment
 #   instance_name               = "ec2-4-ms-tracking"
 #   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_id
+#   subnet_id                   = module.vpc.private_subnet_ids[0]
 #   instance_type               = "t2.micro"
 #   associate_public_ip_address = false
 #   allowed_ports               = [22, 3006, 3007]
@@ -124,7 +124,7 @@ module "ec2_2_ms_core" {
 #   environment                 = var.environment
 #   instance_name               = "ec2-5-ms-specialized"
 #   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_id
+#   subnet_id                   = module.vpc.private_subnet_ids[0]
 #   instance_type               = "t2.micro"
 #   associate_public_ip_address = false
 #   allowed_ports               = [22, 3008, 3009] # Using arbitrary ports for n8n/Python
@@ -144,7 +144,7 @@ module "ec2_6_db_postgres" {
   environment                 = var.environment
   instance_name               = "ec2-6-db-postgres"
   vpc_id                      = module.vpc.vpc_id
-  subnet_id                   = module.vpc.private_subnet_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t2.micro"
   associate_public_ip_address = false
   allowed_ports               = [22, 5432]
@@ -167,7 +167,7 @@ module "ec2_6_db_postgres" {
 #   environment                 = var.environment
 #   instance_name               = "ec2-7-db-mongodb"
 #   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_id
+#   subnet_id                   = module.vpc.private_subnet_ids[0]
 #   instance_type               = "t2.micro"
 #   associate_public_ip_address = false
 #   allowed_ports               = [22, 27017]
@@ -188,7 +188,7 @@ module "ec2_8_db_queues" {
   environment                 = var.environment
   instance_name               = "ec2-8-db-queues"
   vpc_id                      = module.vpc.vpc_id
-  subnet_id                   = module.vpc.private_subnet_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t3.small"
   associate_public_ip_address = false
   allowed_ports               = [22, 6379, 9092, 5672, 15672]
