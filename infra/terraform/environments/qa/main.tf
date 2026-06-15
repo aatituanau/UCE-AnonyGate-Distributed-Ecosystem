@@ -27,6 +27,12 @@ module "ec2_1_nginx_bastion" {
                   listen 80 default_server;
                   listen [::]:80 default_server;
 
+                  location / {
+                      proxy_pass http://127.0.0.1:8080;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
                   location /auth/ {
                       proxy_pass http://${module.ec2_2_ms_core.private_ip}:3000;
                       proxy_set_header Host $${host};

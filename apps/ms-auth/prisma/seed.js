@@ -1,12 +1,12 @@
-import 'dotenv/config';
-import { PrismaClient } from '../src/generated/prisma';
-import * as bcrypt from 'bcrypt';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+require('dotenv/config');
+const { PrismaClient } = require('../dist/generated/prisma');
+const bcrypt = require('bcrypt');
+const { Pool } = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaPg({ pool });
 const prisma = new PrismaClient({ adapter });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ const prisma = new PrismaClient({ adapter });
 // use anonymous crypto tokens issued by MS-02.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ANALYSTS: { email: string; name: string }[] = [
+const ANALYSTS = [
   { email: 'analyst01@uce.edu.ec', name: 'Analista 01' },
   { email: 'analyst02@uce.edu.ec', name: 'Analista 02' },
   { email: 'analyst03@uce.edu.ec', name: 'Analista 03' },
