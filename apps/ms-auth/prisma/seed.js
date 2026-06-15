@@ -1,7 +1,13 @@
 require('dotenv/config');
 const { PrismaClient } = require('../dist/generated/prisma');
 const bcrypt = require('bcrypt');
-const prisma = new PrismaClient();
+const { Pool } = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
+
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEED DATA
