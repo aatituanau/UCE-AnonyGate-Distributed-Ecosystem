@@ -92,7 +92,7 @@ module "ec2_3_ms_processing" {
   associate_public_ip_address = false
   allowed_ports               = [22, 3003, 3004, 3005]
   key_name                    = var.key_name
-  user_data = <<-EOF
+  user_data                   = <<-EOF
               #!/bin/bash
               apt-get update
               apt-get install -y docker.io docker-compose
