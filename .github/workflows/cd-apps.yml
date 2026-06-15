@@ -130,7 +130,6 @@ jobs:
             # Pull latest images from GHCR
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
-            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
 
             # Deploy MS-Auth (Zero Downtime Strategy)
             echo "Starting Replica Test for ms-auth..."
@@ -169,25 +168,6 @@ jobs:
               exit 1
             fi
 
-            # Deploy MS-Submission (Zero Downtime Strategy)
-            echo "Starting Replica Test for ms-submission..."
-            sudo docker run -d --name ms-submission-test --network anonygate-net --env-file .env -e ALIAS_GRPC_URL="ms-alias:50051" -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
-            sleep 10
-            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-submission-test)" == "true" ]; then
-              echo "Replica stable. Replacing old instance..."
-              sudo docker rm -f ms-submission-test
-              sudo docker stop ms-submission || true
-              sudo docker rm ms-submission || true
-              sudo docker run -d --name ms-submission --network anonygate-net -p 3003:3003 --env-file .env -e ALIAS_GRPC_URL="ms-alias:50051" -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
-            else
-              echo "Deploy failed. Old instance remains active."
-              sudo docker rm -f ms-submission-test
-              exit 1
-            fi
-            
-            echo "Running MS-Submission database push..."
-            sleep 5
-            sudo docker exec ms-submission npx prisma db push --schema=prisma/schema.prisma || true
 
             echo "Waiting 5 seconds to see if containers survive..."
             sleep 5
@@ -197,6 +177,59 @@ jobs:
 
             echo "=== LOGS DE MS-ALIAS ==="
             sudo docker logs ms-alias
+
+
+
+      - name: Deploy Processing Microservices via Bastion
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST_MS_PROCESSING }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.EC2_HOST_NGINX }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Waiting for cloud-init to finish..."
+            while [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 5; done
+            
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found! Forcing installation..."
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose
+            fi
+            
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            echo "DATABASE_URL=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" > .env
+            echo "ALIAS_GRPC_URL=${{ secrets.EC2_HOST_MS_CORE }}:50051" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
+            echo "REDIS_PORT=6379" >> .env
+            echo "KAFKA_BROKER=${{ secrets.DB_QUEUES_IP }}:9092" >> .env
+
+            sudo docker system prune -af --volumes
+            sudo docker network create anonygate-net || true
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+
+            echo "Starting Replica Test for ms-submission..."
+            sudo docker run -d --name ms-submission-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-submission-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-submission-test
+              sudo docker stop ms-submission || true
+              sudo docker rm ms-submission || true
+              sudo docker run -d --name ms-submission --network anonygate-net -p 3003:3003 --env-file .env --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-submission-test
+              exit 1
+            fi
+            
+            echo "Running MS-Submission database push..."
+            sleep 5
+            sudo docker exec ms-submission npx prisma db push --schema=prisma/schema.prisma || true
 
             echo "=== LOGS DE MS-SUBMISSION ==="
             sudo docker logs ms-submission

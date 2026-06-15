@@ -38,6 +38,12 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
+
+                  location /api/v1/complaints {
+                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3003;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
                   # Future routes for forms, submission, etc will be added here
               }
               NGINXCONF
@@ -64,7 +70,7 @@ module "ec2_2_ms_core" {
   subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t2.micro"
   associate_public_ip_address = false
-  allowed_ports               = [22, 3000, 3001, 3002, 3003]
+  allowed_ports               = [22, 3000, 3001, 3002, 50051]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
@@ -76,25 +82,24 @@ module "ec2_2_ms_core" {
 }
 
 # --- EC2-3: PRIVATE SUBNET (ms-submission, ms-evidence, ms-admin) ---
-# TEMPORARILY DISABLED FOR RAPID TESTING
-# module "ec2_3_ms_processing" {
-#   source                      = "../../modules/ec2"
-#   environment                 = var.environment
-#   instance_name               = "ec2-3-ms-processing"
-#   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_ids[0]
-#   instance_type               = "t2.micro"
-#   associate_public_ip_address = false
-#   allowed_ports               = [22, 3003, 3004, 3005]
-#   key_name                    = var.key_name
-#   user_data = <<-EOF
-#               #!/bin/bash
-#               apt-get update
-#               apt-get install -y docker.io docker-compose
-#               systemctl start docker
-#               systemctl enable docker
-#               EOF
-# }
+module "ec2_3_ms_processing" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-3-ms-processing"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
+  instance_type               = "t2.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3003, 3004, 3005]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
 
 # --- EC2-4: PRIVATE SUBNET (ms-status-chat, ms-audit) ---
 # TEMPORARILY DISABLED FOR RAPID TESTING
