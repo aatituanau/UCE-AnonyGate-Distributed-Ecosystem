@@ -18,7 +18,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [ms-auth, ms-alias, ms-submission, frontend-client]
+        service: [ms-auth, ms-alias, ms-submission, ms-admin, frontend-client]
     
     steps:
       - uses: actions/checkout@v4
@@ -233,6 +233,27 @@ jobs:
 
             echo "=== LOGS DE MS-SUBMISSION ==="
             sudo docker logs ms-submission
+
+            # Deploy MS-Admin (Zero Downtime Strategy)
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-admin:latest
+
+            echo "Starting Replica Test for ms-admin..."
+            sudo docker run -d --name ms-admin-test --network anonygate-net --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-admin:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-admin-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-admin-test
+              sudo docker stop ms-admin || true
+              sudo docker rm ms-admin || true
+              sudo docker run -d --name ms-admin --network anonygate-net -p 3009:3009 --env-file .env -e DATABASE_URL="postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-admin:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-admin-test
+              exit 1
+            fi
+            
+            echo "=== LOGS DE MS-ADMIN ==="
+            sudo docker logs ms-admin
 
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3

@@ -96,7 +96,7 @@ module "ec2_3_ms_processing" {
   subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t2.micro"
   associate_public_ip_address = false
-  allowed_ports               = [22, 3003, 3004, 3005]
+  allowed_ports               = [22, 3003, 3004, 3005, 3009]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
