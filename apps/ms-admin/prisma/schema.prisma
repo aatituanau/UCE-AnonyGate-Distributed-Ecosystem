@@ -1,0 +1,62 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "complaints"]
+}
+
+// ==============================================
+// SCHEMA: public (Tablas de Auth)
+// Requeridas para registrar Analistas
+// ==============================================
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String     @map("password_hash")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  
+  userRoles     UserRole[]
+  
+  @@map("users")
+  @@schema("public")
+}
+
+model Role {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  userRoles UserRole[]
+
+  @@map("roles")
+  @@schema("public")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+  @@schema("public")
+}
+
+// ==============================================
+// SCHEMA: complaints (Tablas de Denuncias)
+// Requeridas para Listar/Consultar
+// ==============================================
+
+model Complaint {
+  id          String   @id @default(uuid())
+  aliasToken  String   @unique
+  payload     Json     
+  status      String   @default("RECEIVED") 
+  createdAt   DateTime @default(now())
+
+  @@schema("complaints")
+}
