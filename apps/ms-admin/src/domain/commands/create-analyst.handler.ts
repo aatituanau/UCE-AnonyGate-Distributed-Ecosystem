@@ -1,6 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateAnalystCommand } from './create-analyst.command';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @CommandHandler(CreateAnalystCommand)
 export class CreateAnalystHandler implements ICommandHandler<CreateAnalystCommand> {
@@ -20,11 +21,15 @@ export class CreateAnalystHandler implements ICommandHandler<CreateAnalystComman
       });
     }
 
+    // Hash the password securely before saving
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(command.password, saltRounds);
+
     // 2. Insert the new user with the corresponding role
     const user = await this.prisma.user.create({
       data: {
         email: command.email,
-        passwordHash: command.passwordHash,
+        passwordHash: hashedPassword,
         userRoles: {
           create: {
             roleId: analystRole.id,

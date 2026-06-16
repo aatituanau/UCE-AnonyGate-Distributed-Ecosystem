@@ -13,10 +13,10 @@ export class AdminController {
   ) {}
 
   @Post('analysts')
-  async createAnalyst(@Body() body: { email: string; passwordHash: string }) {
+  async createAnalyst(@Body() body: { email: string; password: string }) {
     // Delegate writing to the corresponding Command Handler
     return this.commandBus.execute(
-      new CreateAnalystCommand(body.email, body.passwordHash),
+      new CreateAnalystCommand(body.email, body.password),
     );
   }
 
