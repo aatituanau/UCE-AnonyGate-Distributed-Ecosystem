@@ -11,15 +11,8 @@ const CommandHandlers = [CreateAnalystHandler];
 const QueryHandlers = [GetComplaintsHandler];
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    CqrsModule,
-    PrismaModule,
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), CqrsModule, PrismaModule],
   controllers: [AdminController, LegacyIntegrationController],
-  providers: [
-    ...CommandHandlers,
-    ...QueryHandlers,
-  ],
+  providers: [...CommandHandlers, ...QueryHandlers],
 })
 export class AppModule {}

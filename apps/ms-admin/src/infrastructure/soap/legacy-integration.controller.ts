@@ -15,8 +15,8 @@ export class LegacyIntegrationController {
   @Post('integration')
   async handleLegacySoap(@Req() req: Request, @Res() res: Response) {
     let rawXml = '';
-    
-    req.on('data', chunk => {
+
+    req.on('data', (chunk) => {
       rawXml += chunk;
     });
 
@@ -24,23 +24,23 @@ export class LegacyIntegrationController {
       try {
         // 1. Parse the incoming XML
         const parsedData = this.parser.parse(rawXml);
-        
+
         // 2. Build the response in SOAP format (pure XML)
         const responseObj = {
-          "?xml": { "@_version": "1.0", "@_encoding": "utf-8" },
-          "soap:Envelope": {
-            "@_xmlns:soap": "http://schemas.xmlsoap.org/soap/envelope/",
-            "soap:Body": {
-              "ValidateUserResponse": {
-                "isValid": true,
-                "message": "User validated in Legacy UCE System"
-              }
-            }
-          }
+          '?xml': { '@_version': '1.0', '@_encoding': 'utf-8' },
+          'soap:Envelope': {
+            '@_xmlns:soap': 'http://schemas.xmlsoap.org/soap/envelope/',
+            'soap:Body': {
+              ValidateUserResponse: {
+                isValid: true,
+                message: 'User validated in Legacy UCE System',
+              },
+            },
+          },
         };
 
         const xmlResponse = this.builder.build(responseObj);
-        
+
         // 3. Return the XML to the client
         res.set('Content-Type', 'text/xml');
         res.status(200).send(xmlResponse);

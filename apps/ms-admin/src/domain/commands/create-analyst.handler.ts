@@ -8,7 +8,7 @@ export class CreateAnalystHandler implements ICommandHandler<CreateAnalystComman
 
   async execute(command: CreateAnalystCommand) {
     // CQRS WRITE: Access the 'public' schema for roles and users
-    
+
     // 1. Ensure the 'analyst' role exists
     let analystRole = await this.prisma.role.findUnique({
       where: { name: 'analyst' },

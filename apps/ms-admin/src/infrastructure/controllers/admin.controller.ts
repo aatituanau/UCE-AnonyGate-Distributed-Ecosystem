@@ -21,7 +21,10 @@ export class AdminController {
   }
 
   @Get('complaints')
-  async getComplaints(@Query('page') page: string, @Query('limit') limit: string) {
+  async getComplaints(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
     // Delegate reading to the corresponding Query Handler
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
