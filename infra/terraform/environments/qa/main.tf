@@ -52,13 +52,13 @@ module "ec2_1_nginx_bastion" {
                   }
 
                   location /admin/ {
-                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3009/admin/;
+                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3009;
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
                   location /ws/ {
-                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3009/ws/;
+                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3009;
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
