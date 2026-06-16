@@ -19,4 +19,4 @@ RUN npm install --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/generated/prisma ./dist/generated/prisma
 EXPOSE 3009
-CMD sh -c "npx prisma db push && npm run start:prod"
+CMD sh -c "npm run start:prod"
