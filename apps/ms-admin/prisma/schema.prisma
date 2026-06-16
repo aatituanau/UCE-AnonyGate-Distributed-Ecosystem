@@ -9,8 +9,8 @@ datasource db {
 }
 
 // ==============================================
-// SCHEMA: public (Tablas de Auth)
-// Requeridas para registrar Analistas
+// SCHEMA: public (Auth Tables)
+// Required to register Analysts
 // ==============================================
 
 model User {
@@ -47,8 +47,8 @@ model UserRole {
 }
 
 // ==============================================
-// SCHEMA: complaints (Tablas de Denuncias)
-// Requeridas para Listar/Consultar
+// SCHEMA: complaints (Complaint Tables)
+// Required to List/Query
 // ==============================================
 
 model Complaint {

@@ -7,9 +7,9 @@ export class CreateAnalystHandler implements ICommandHandler<CreateAnalystComman
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(command: CreateAnalystCommand) {
-    // CQRS ESCRITURA: Accedemos al esquema 'public' para roles y usuarios
+    // CQRS WRITE: Access the 'public' schema for roles and users
     
-    // 1. Asegurarnos que el rol 'analyst' exista
+    // 1. Ensure the 'analyst' role exists
     let analystRole = await this.prisma.role.findUnique({
       where: { name: 'analyst' },
     });
@@ -20,7 +20,7 @@ export class CreateAnalystHandler implements ICommandHandler<CreateAnalystComman
       });
     }
 
-    // 2. Insertar al nuevo usuario con el rol correspondiente
+    // 2. Insert the new user with the corresponding role
     const user = await this.prisma.user.create({
       data: {
         email: command.email,

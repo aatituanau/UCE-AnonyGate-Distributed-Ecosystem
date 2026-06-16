@@ -22,10 +22,10 @@ export class LegacyIntegrationController {
 
     req.on('end', () => {
       try {
-        // 1. Parseamos el XML que nos enviaron
+        // 1. Parse the incoming XML
         const parsedData = this.parser.parse(rawXml);
         
-        // 2. Armamos la respuesta en formato SOAP (XML puro)
+        // 2. Build the response in SOAP format (pure XML)
         const responseObj = {
           "?xml": { "@_version": "1.0", "@_encoding": "utf-8" },
           "soap:Envelope": {
@@ -41,7 +41,7 @@ export class LegacyIntegrationController {
 
         const xmlResponse = this.builder.build(responseObj);
         
-        // 3. Retornamos el XML al cliente
+        // 3. Return the XML to the client
         res.set('Content-Type', 'text/xml');
         res.status(200).send(xmlResponse);
       } catch (err) {

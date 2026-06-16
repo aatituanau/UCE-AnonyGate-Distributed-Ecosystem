@@ -9,7 +9,7 @@ export class GetComplaintsHandler implements IQueryHandler<GetComplaintsQuery> {
   async execute(query: GetComplaintsQuery) {
     const skip = (query.page - 1) * query.limit;
     
-    // CQRS LECTURA: Leemos de la tabla Complaint en el esquema 'complaints'
+    // CQRS READ: Read from the Complaint table in the 'complaints' schema
     const [data, total] = await Promise.all([
       this.prisma.complaint.findMany({
         skip,

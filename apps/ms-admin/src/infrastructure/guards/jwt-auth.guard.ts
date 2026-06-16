@@ -7,7 +7,7 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers.authorization;
     
-    // Verificamos que traiga un token Bearer en las cabeceras
+    // Verify that a Bearer token is present in the headers
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Token no provisto o inválido. Acceso denegado.');
     }
@@ -17,8 +17,8 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('El token no tiene la longitud mínima.');
     }
 
-    // Al ser un microservicio interno, validamos la estructura. 
-    // En el ecosistema final MS-Auth es el emisor y aquí se descifra.
+    // As an internal microservice, we validate the structure. 
+    // In the final ecosystem MS-Auth is the issuer and it's decoded here.
     return true; 
   }
 }

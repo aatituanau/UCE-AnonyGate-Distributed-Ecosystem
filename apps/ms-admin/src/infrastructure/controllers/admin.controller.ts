@@ -14,7 +14,7 @@ export class AdminController {
 
   @Post('analysts')
   async createAnalyst(@Body() body: { email: string; passwordHash: string }) {
-    // Delegamos la escritura al Command Handler correspondiente
+    // Delegate writing to the corresponding Command Handler
     return this.commandBus.execute(
       new CreateAnalystCommand(body.email, body.passwordHash),
     );
@@ -22,7 +22,7 @@ export class AdminController {
 
   @Get('complaints')
   async getComplaints(@Query('page') page: string, @Query('limit') limit: string) {
-    // Delegamos la lectura al Query Handler correspondiente
+    // Delegate reading to the corresponding Query Handler
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.queryBus.execute(new GetComplaintsQuery(pageNum, limitNum));
