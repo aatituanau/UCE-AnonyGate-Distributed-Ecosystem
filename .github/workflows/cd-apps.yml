@@ -18,7 +18,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [ms-auth, ms-alias, ms-submission, ms-admin, frontend-client]
+        service: [ms-auth, ms-alias, ms-submission, ms-admin, web]
     
     steps:
       - uses: actions/checkout@v4
@@ -273,17 +273,17 @@ jobs:
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-frontend-client:latest
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-web:latest
             
-            sudo docker stop frontend-client || true
-            sudo docker rm frontend-client || true
+            sudo docker stop web || true
+            sudo docker rm web || true
             
             # Run the frontend container on port 8080 of the Nginx machine
-            sudo docker run -d --name frontend-client \
+            sudo docker run -d --name web \
               -p 8080:80 \
               -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               --restart unless-stopped \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-frontend-client:latest
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-web:latest
