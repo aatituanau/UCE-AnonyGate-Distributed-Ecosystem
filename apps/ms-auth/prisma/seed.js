@@ -72,7 +72,7 @@ async function main() {
   for (const analyst of ANALYSTS) {
     const user = await prisma.user.upsert({
       where: { email: analyst.email },
-      update: { passwordHash: defaultPasswordHash }, // solo actualiza contraseña
+      update: { passwordHash: defaultPasswordHash }, // only update password
       create: {
         email: analyst.email,
         passwordHash: defaultPasswordHash,

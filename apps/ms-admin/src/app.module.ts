@@ -5,10 +5,13 @@ import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AdminController } from './infrastructure/controllers/admin.controller';
 import { LegacyIntegrationController } from './infrastructure/soap/legacy-integration.controller';
 import { GetComplaintsHandler } from './domain/queries/get-complaints.handler';
+import { GetAnalystsHandler } from './domain/queries/get-analysts.handler';
+import { GetDashboardStatsHandler } from './domain/queries/get-dashboard-stats.handler';
 import { CreateAnalystHandler } from './domain/commands/create-analyst.handler';
+import { DeleteAnalystHandler } from './domain/commands/delete-analyst.handler';
 
-const CommandHandlers = [CreateAnalystHandler];
-const QueryHandlers = [GetComplaintsHandler];
+const CommandHandlers = [CreateAnalystHandler, DeleteAnalystHandler];
+const QueryHandlers = [GetComplaintsHandler, GetAnalystsHandler, GetDashboardStatsHandler];
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), CqrsModule, PrismaModule],
