@@ -282,6 +282,10 @@ jobs:
             sudo docker stop web || true
             sudo docker rm web || true
             
+            # Clean up the old container name from previous versions to free port 8080
+            sudo docker stop frontend-client || true
+            sudo docker rm frontend-client || true
+            
             # Run the frontend container on port 8080 of the Nginx machine
             sudo docker run -d --name web \
               -p 8080:80 \
