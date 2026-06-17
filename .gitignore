@@ -21,4 +21,3 @@ build/
 .env
 .agent/*
 **/src/generated/
-.turbo/
