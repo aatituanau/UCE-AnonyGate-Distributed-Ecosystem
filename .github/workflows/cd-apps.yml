@@ -292,6 +292,8 @@ jobs:
               -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
+              -e VITE_API_ADMIN_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
+              -e MS_PROCESSING_IP="${{ secrets.EC2_HOST_MS_PROCESSING }}" \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-web:latest
