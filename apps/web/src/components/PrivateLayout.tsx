@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, User, LogOut, LayoutDashboard, Users, AlertCircle } from 'lucide-react';
+import { Shield, LogOut, LayoutDashboard, Users, AlertCircle } from 'lucide-react';
 
 export default function PrivateLayout() {
   const location = useLocation();
