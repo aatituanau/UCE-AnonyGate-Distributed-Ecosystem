@@ -18,7 +18,7 @@ function App() {
     if (token) {
       try {
         return JSON.parse(atob(token.split('.')[1]));
-      } catch (e) {
+      } catch (_e) {
         return null;
       }
     }
@@ -31,7 +31,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Rutas sin Layout (Pantallas Completas) */}
+        {/* Routes without Layout (Full Screens) */}
         <Route
           path="/login"
           element={!isAuthenticated ? <Login setAuth={setIsAuthenticated} /> : <Navigate to="/dashboard" replace />}
@@ -43,7 +43,7 @@ function App() {
           <Route path="denounce" element={<Denounce />} />
         </Route>
         
-        {/* Layout Privado (Dashboard con Sidebar) */}
+        {/* Private Layout (Dashboard with Sidebar) */}
         <Route path="/" element={isAuthenticated ? <PrivateLayout /> : <Navigate to="/login" replace />}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="admin/complaints" element={<AdminComplaints />} />

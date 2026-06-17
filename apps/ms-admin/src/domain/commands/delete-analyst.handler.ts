@@ -15,7 +15,7 @@ export class DeleteAnalystHandler implements ICommandHandler<DeleteAnalystComman
       throw new NotFoundException('Analista no encontrado');
     }
 
-    // Usando cascade de la base de datos para eliminar relaciones (userRoles, refreshTokens) automáticamente
+    // Using database cascade to automatically delete relations (userRoles, refreshTokens)
     await this.prisma.user.delete({ where: { id } });
 
     return { success: true, message: 'Analista eliminado correctamente' };

@@ -3,6 +3,7 @@ import { adminApi } from '../services/api';
 import { AlertCircle, FileText, Search, RefreshCw, Eye } from 'lucide-react';
 
 export default function AdminComplaints() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,6 +16,7 @@ export default function AdminComplaints() {
       const res = await adminApi.get('/admin/complaints');
       // res.data contains { data: [...], meta: {...} } from the CQRS handler
       setComplaints(res.data.data || []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status === 404) {
         setError('El endpoint /admin/complaints aún no está implementado en el backend ms-admin.');
@@ -27,6 +29,7 @@ export default function AdminComplaints() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchComplaints();
   }, []);
 

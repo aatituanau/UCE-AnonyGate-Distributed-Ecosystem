@@ -16,7 +16,7 @@ export default function Dashboard() {
     if (token) {
       try {
         return JSON.parse(atob(token.split('.')[1]));
-      } catch (e) {
+      } catch (_e) {
         return null;
       }
     }
@@ -59,6 +59,7 @@ export default function Dashboard() {
 
       setSuccessMsg('Tokens rotados exitosamente. ¡La seguridad funciona!');
       setTimeout(() => setSuccessMsg(''), 4000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error refrescando token. Inicia sesión de nuevo.');
     } finally {

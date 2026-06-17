@@ -3,6 +3,7 @@ import { adminApi } from '../services/api';
 import { AlertCircle, Users, Search, RefreshCw, UserPlus, Shield, X, Check, Trash2 } from 'lucide-react';
 
 export default function AdminAnalysts() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [analysts, setAnalysts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,6 +24,7 @@ export default function AdminAnalysts() {
     try {
       const res = await adminApi.get('/admin/analysts');
       setAnalysts(res.data || []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status === 404) {
         setError('El endpoint /admin/analysts aún no está implementado en el backend ms-admin.');
@@ -42,7 +44,8 @@ export default function AdminAnalysts() {
       setShowForm(false);
       setNewEmail('');
       setNewPassword('');
-      fetchAnalysts(); // Recargar la lista
+      fetchAnalysts(); // Reload the list
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al crear el analista');
     } finally {
@@ -55,7 +58,8 @@ export default function AdminAnalysts() {
     setDeletingId(id);
     try {
       await adminApi.delete(`/admin/analysts/${id}`);
-      fetchAnalysts(); // Recargar la lista
+      fetchAnalysts(); // Reload the list
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error al eliminar el analista');
     } finally {
@@ -64,6 +68,7 @@ export default function AdminAnalysts() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAnalysts();
   }, []);
 

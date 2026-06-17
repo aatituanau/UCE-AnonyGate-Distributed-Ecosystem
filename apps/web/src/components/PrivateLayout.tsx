@@ -15,7 +15,7 @@ export default function PrivateLayout() {
     if (token) {
       try {
         return JSON.parse(atob(token.split('.')[1]));
-      } catch (e) {
+      } catch (_e) {
         return null;
       }
     }
@@ -38,7 +38,7 @@ export default function PrivateLayout() {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Sidebar Privado */}
+      {/* Private Sidebar */}
       <aside className="w-72 bg-white flex flex-col border-r border-slate-200 z-20">
         <div className="h-16 flex items-center px-6 border-b border-slate-100">
           <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center mr-3">
