@@ -1,0 +1,17 @@
+
+> ms-submission@0.0.1 prebuild
+> npx prisma generate
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma\schema.prisma.
+
+✔ Generated Prisma Client (v7.8.0) to .\src\generated\prisma in 173ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+
+> ms-submission@0.0.1 build
+> nest build
+
