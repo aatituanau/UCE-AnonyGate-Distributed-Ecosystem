@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Instancia para MS-Auth (autenticación)
+// Instance for MS-Auth (authentication)
 export const authApi = axios.create({
   baseURL: import.meta.env.VITE_API_AUTH_URL || 'http://localhost:3000',
 });
@@ -24,7 +24,7 @@ adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Si expira, podríamos intentar refrescar aquí
+      // If it expires, we could try to refresh here
       console.warn("Token expirado o inválido");
     }
     return Promise.reject(error);
