@@ -35,7 +35,7 @@ export default function Login({ setAuth }: LoginProps) {
 
   return (
     <div className="flex h-screen w-full -m-8 relative">
-      {/* Lado Izquierdo: Branding UCE */}
+      {/* Left Side: UCE Branding */}
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white flex-col justify-center items-center p-12 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full blur-[100px] opacity-20"></div>
@@ -56,7 +56,7 @@ export default function Login({ setAuth }: LoginProps) {
         </div>
       </div>
 
-      {/* Lado Derecho: Formulario de Login */}
+      {/* Right Side: Login Form */}
       <div className="w-full lg:w-1/2 bg-[#F4F7FA] flex flex-col justify-center items-center p-8 lg:p-24 relative">
         <div className="w-full max-w-md bg-white p-10 rounded-3xl shadow-xl border border-gray-100 relative">
           <Link to="/" className="absolute top-6 left-6 text-gray-400 hover:text-blue-600 transition-colors flex items-center text-sm font-medium">
