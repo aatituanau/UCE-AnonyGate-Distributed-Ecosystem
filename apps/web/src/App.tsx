@@ -37,7 +37,7 @@ function App() {
           element={!isAuthenticated ? <Login setAuth={setIsAuthenticated} /> : <Navigate to="/dashboard" replace />}
         />
 
-        {/* Layout Público (Solo Navbar, para usuarios anónimos) */}
+        {/* Public Layout (Only Navbar, for anonymous users) */}
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<Navigate to="/denounce" replace />} />
           <Route path="denounce" element={<Denounce />} />
@@ -46,11 +46,11 @@ function App() {
         {/* Private Layout (Dashboard with Sidebar) */}
         <Route path="/" element={isAuthenticated ? <PrivateLayout /> : <Navigate to="/login" replace />}>
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="admin/complaints" element={<AdminComplaints />} />
+          <Route path="backoffice/complaints" element={<AdminComplaints />} />
           
-          {/* Protección de ruta por Rol Admin */}
+          {/* Route protection for Admin Role */}
           <Route
-            path="admin/analysts"
+            path="backoffice/analysts"
             element={isAdmin ? <AdminAnalysts /> : <Navigate to="/dashboard" replace />}
           />
         </Route>

@@ -28,12 +28,12 @@ export default function PrivateLayout() {
   // Base items for any logged in user (Analyst or Admin)
   const menuItems = [
     { path: '/dashboard', label: 'Resumen', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { path: '/admin/complaints', label: 'Denuncias', icon: <AlertCircle className="w-5 h-5" /> },
+    { path: '/backoffice/complaints', label: 'Denuncias', icon: <AlertCircle className="w-5 h-5" /> },
   ];
 
   // Admin-only items
   if (isAdmin) {
-    menuItems.push({ path: '/admin/analysts', label: 'Analistas', icon: <Users className="w-5 h-5" /> });
+    menuItems.push({ path: '/backoffice/analysts', label: 'Analistas', icon: <Users className="w-5 h-5" /> });
   }
 
   return (
