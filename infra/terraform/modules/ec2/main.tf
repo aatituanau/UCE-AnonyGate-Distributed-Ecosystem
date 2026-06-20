@@ -43,6 +43,13 @@ resource "aws_instance" "this" {
   user_data                   = var.user_data
   key_name                    = var.key_name != "" ? var.key_name : null
 
+  # EBS root volume: data persists after instance termination (critical for demo/presentation)
+  root_block_device {
+    volume_size           = 20
+    delete_on_termination = false
+    encrypted             = true
+  }
+
   tags = {
     Name = "${var.environment}-${var.instance_name}"
   }
