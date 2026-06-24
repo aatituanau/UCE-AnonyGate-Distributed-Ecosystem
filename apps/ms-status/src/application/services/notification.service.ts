@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { CaseStatus } from '../../domain/entities/case-status.entity';
-import { StatusGateway } from '../../infrastructure/adapters/inbound/websocket/status.gateway';
-import { MqttAlertService } from '../../infrastructure/adapters/outbound/mqtt/mqtt-alert.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { CaseStatus } from "../../domain/entities/case-status.entity";
+import { StatusGateway } from "../../infrastructure/adapters/inbound/websocket/status.gateway";
+import { MqttAlertService } from "../../infrastructure/adapters/outbound/mqtt/mqtt-alert.service";
 
 /**
  * Service to orchestrate real-time notifications.
@@ -22,7 +22,9 @@ export class NotificationService {
   }
 
   notifyStatusUpdate(caseStatus: CaseStatus, fromStatus: string): void {
-    this.logger.log(`Notify status update: ${caseStatus.complaintId} (${fromStatus} -> ${caseStatus.status})`);
+    this.logger.log(
+      `Notify status update: ${caseStatus.complaintId} (${fromStatus} -> ${caseStatus.status})`,
+    );
     this.statusGateway.emitStatusUpdate({
       ...caseStatus,
       fromStatus,
@@ -31,13 +33,13 @@ export class NotificationService {
 
   notifyCriticalAlert(caseStatus: CaseStatus): void {
     this.logger.warn(`CRITICAL ALERT for complaint: ${caseStatus.complaintId}`);
-    
+
     // Broadcast to web dashboard via WebSocket
     this.statusGateway.emitCriticalAlert(caseStatus);
-    
+
     // Publish to MQTT for mobile app push notifications
     this.mqttAlertService.publishAlert({
-      type: 'CRITICAL_ALERT',
+      type: "CRITICAL_ALERT",
       timestamp: new Date().toISOString(),
       data: caseStatus,
     });

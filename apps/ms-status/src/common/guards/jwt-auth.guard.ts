@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Injectable } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
 
 /**
  * Guard to protect endpoints that require a valid JWT token.
@@ -7,4 +7,4 @@ import { AuthGuard } from '@nestjs/passport';
  * Used for endpoints accessed by Analysts and Admins.
  */
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {}
+export class JwtAuthGuard extends AuthGuard("jwt") {}

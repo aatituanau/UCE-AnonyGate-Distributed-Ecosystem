@@ -1,12 +1,18 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
-import { PrismaStatusRepository } from '../../infrastructure/adapters/outbound/prisma/prisma-status.repository';
-import { NotificationService } from './notification.service';
-import { CaseStatus } from '../../domain/entities/case-status.entity';
-import { StatusHistory } from '../../generated/prisma';
-import { ComplaintStatus } from '../../domain/enums/complaint-status.enum';
-import { UrgencyLevel } from '../../domain/enums/urgency-level.enum';
-import { isValidTransition, getValidNextStates } from '../../domain/state-machine/status-transitions';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { v4 as uuidv4 } from "uuid";
+import { PrismaStatusRepository } from "../../infrastructure/adapters/outbound/prisma/prisma-status.repository";
+import { NotificationService } from "./notification.service";
+import { CaseStatus } from "../../domain/entities/case-status.entity";
+import { ComplaintStatus } from "../../domain/enums/complaint-status.enum";
+import { UrgencyLevel } from "../../domain/enums/urgency-level.enum";
+import {
+  isValidTransition,
+  getValidNextStates,
+} from "../../domain/state-machine/status-transitions";
 
 /**
  * Core business logic for managing complaint statuses.
@@ -40,14 +46,14 @@ export class StatusService {
     );
 
     await this.repository.createCaseStatus(caseStatus);
-    
+
     // Create initial history record
     const history = {
       id: uuidv4(),
       caseId: caseStatus.id,
-      fromStatus: 'NONE',
+      fromStatus: "NONE",
       toStatus: ComplaintStatus.SUBMITTED,
-      changedBy: 'SYSTEM',
+      changedBy: "SYSTEM",
       changedAt: new Date(),
     };
     await this.repository.createHistory(history);
@@ -58,9 +64,13 @@ export class StatusService {
   /**
    * Transitions a case to a new status, enforcing state machine rules.
    */
-  async transitionStatus(complaintId: string, newStatus: string, analystId: string): Promise<void> {
+  async transitionStatus(
+    complaintId: string,
+    newStatus: string,
+    analystId: string,
+  ): Promise<void> {
     let caseStatus = await this.repository.findByComplaintId(complaintId);
-    
+
     // [SRE/Resilience] Self-healing mechanism: Lazy initialization
     // If ms-status missed the Kafka event (or complaint was created before ms-status existed),
     // we initialize it on the fly instead of throwing a 404 error.
@@ -68,7 +78,9 @@ export class StatusService {
       await this.initializeCase(complaintId);
       caseStatus = await this.repository.findByComplaintId(complaintId);
       if (!caseStatus) {
-        throw new NotFoundException(`Failed to lazy-initialize case status for complaint ${complaintId}`);
+        throw new NotFoundException(
+          `Failed to lazy-initialize case status for complaint ${complaintId}`,
+        );
       }
     }
 
@@ -76,7 +88,9 @@ export class StatusService {
     const targetStatus = newStatus as ComplaintStatus;
 
     if (!isValidTransition(fromStatus, targetStatus)) {
-      throw new BadRequestException(`Invalid status transition from ${fromStatus} to ${targetStatus}`);
+      throw new BadRequestException(
+        `Invalid status transition from ${fromStatus} to ${targetStatus}`,
+      );
     }
 
     await this.repository.updateStatus(caseStatus.id, targetStatus, analystId);
@@ -102,15 +116,20 @@ export class StatusService {
   async updateUrgency(complaintId: string, urgency: string): Promise<void> {
     const caseStatus = await this.repository.findByComplaintId(complaintId);
     if (!caseStatus) {
-      throw new NotFoundException(`Case status for complaint ${complaintId} not found`);
+      throw new NotFoundException(
+        `Case status for complaint ${complaintId} not found`,
+      );
     }
 
     await this.repository.updateUrgency(complaintId, urgency);
 
     const updatedCase = await this.repository.findByComplaintId(complaintId);
 
-    if (urgency === UrgencyLevel.HIGH || urgency === UrgencyLevel.CRITICAL) {
-      this.notificationService.notifyCriticalAlert(updatedCase!);
+    if (
+      urgency === (UrgencyLevel.HIGH as string) ||
+      urgency === (UrgencyLevel.CRITICAL as string)
+    ) {
+      void this.notificationService.notifyCriticalAlert(updatedCase!);
     }
   }
 
@@ -119,13 +138,15 @@ export class StatusService {
    */
   async getCaseByComplaintId(complaintId: string) {
     let caseStatus = await this.repository.findByComplaintId(complaintId);
-    
+
     // [SRE/Resilience] Self-healing mechanism: Lazy initialization
     if (!caseStatus) {
       await this.initializeCase(complaintId);
       caseStatus = await this.repository.findByComplaintId(complaintId);
       if (!caseStatus) {
-        throw new NotFoundException(`Failed to lazy-initialize case status for complaint ${complaintId}`);
+        throw new NotFoundException(
+          `Failed to lazy-initialize case status for complaint ${complaintId}`,
+        );
       }
     }
 

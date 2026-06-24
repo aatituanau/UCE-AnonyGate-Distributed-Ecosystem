@@ -1,4 +1,4 @@
-import { ComplaintStatus } from '../enums/complaint-status.enum';
+import { ComplaintStatus } from "../enums/complaint-status.enum";
 
 /**
  * State Machine — Valid transitions for complaint lifecycle.
@@ -12,10 +12,27 @@ import { ComplaintStatus } from '../enums/complaint-status.enum';
  *
  * Terminal states (CLOSED, REJECTED) have no outgoing transitions.
  */
-const VALID_TRANSITIONS: ReadonlyMap<ComplaintStatus, readonly ComplaintStatus[]> = new Map([
+const VALID_TRANSITIONS: ReadonlyMap<
+  ComplaintStatus,
+  readonly ComplaintStatus[]
+> = new Map([
   [ComplaintStatus.SUBMITTED, [ComplaintStatus.IN_REVIEW]],
-  [ComplaintStatus.IN_REVIEW, [ComplaintStatus.AWAITING_INFO, ComplaintStatus.CLOSED, ComplaintStatus.REJECTED]],
-  [ComplaintStatus.AWAITING_INFO, [ComplaintStatus.IN_REVIEW, ComplaintStatus.CLOSED, ComplaintStatus.REJECTED]],
+  [
+    ComplaintStatus.IN_REVIEW,
+    [
+      ComplaintStatus.AWAITING_INFO,
+      ComplaintStatus.CLOSED,
+      ComplaintStatus.REJECTED,
+    ],
+  ],
+  [
+    ComplaintStatus.AWAITING_INFO,
+    [
+      ComplaintStatus.IN_REVIEW,
+      ComplaintStatus.CLOSED,
+      ComplaintStatus.REJECTED,
+    ],
+  ],
   [ComplaintStatus.CLOSED, []],
   [ComplaintStatus.REJECTED, []],
 ]);
@@ -27,7 +44,10 @@ const VALID_TRANSITIONS: ReadonlyMap<ComplaintStatus, readonly ComplaintStatus[]
  * @param to   - Desired new status
  * @returns true if the transition is permitted, false otherwise
  */
-export function isValidTransition(from: ComplaintStatus, to: ComplaintStatus): boolean {
+export function isValidTransition(
+  from: ComplaintStatus,
+  to: ComplaintStatus,
+): boolean {
   const allowed = VALID_TRANSITIONS.get(from);
   if (!allowed) return false;
   return allowed.includes(to);
@@ -40,6 +60,8 @@ export function isValidTransition(from: ComplaintStatus, to: ComplaintStatus): b
  * @param from - Current status of the case
  * @returns Array of valid next states (empty for terminal states)
  */
-export function getValidNextStates(from: ComplaintStatus): readonly ComplaintStatus[] {
+export function getValidNextStates(
+  from: ComplaintStatus,
+): readonly ComplaintStatus[] {
   return VALID_TRANSITIONS.get(from) ?? [];
 }

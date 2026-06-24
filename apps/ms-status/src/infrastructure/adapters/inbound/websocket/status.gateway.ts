@@ -3,21 +3,20 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
-import { RedisSessionService } from '../../outbound/redis/redis-session.service';
-import { JwtService } from '@nestjs/jwt';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { Logger } from "@nestjs/common";
+import { RedisSessionService } from "../../outbound/redis/redis-session.service";
+import { JwtService } from "@nestjs/jwt";
 
 /**
  * WebSocket Gateway for emitting real-time updates to Analysts.
  */
 @WebSocketGateway({
   cors: {
-    origin: '*', // In production, restrict this to the frontend domains
+    origin: "*", // In production, restrict this to the frontend domains
   },
-  path: '/ws/status',
+  path: "/ws/status",
 })
 export class StatusGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -33,10 +32,11 @@ export class StatusGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     try {
       // Extract JWT from query param or auth header
-      const token = client.handshake.auth?.token || client.handshake.query?.token;
-      
-      if (!token || typeof token !== 'string') {
-        throw new Error('Authentication token missing');
+      const token =
+        client.handshake.auth?.token || client.handshake.query?.token;
+
+      if (!token || typeof token !== "string") {
+        throw new Error("Authentication token missing");
       }
 
       // Verify token
@@ -46,7 +46,7 @@ export class StatusGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const userId = payload.sub;
       if (!userId) {
-        throw new Error('Invalid token payload');
+        throw new Error("Invalid token payload");
       }
 
       // Attach userId to the socket object for future reference
@@ -54,11 +54,11 @@ export class StatusGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Register session in Redis
       await this.redisSession.registerSession(userId, client.id);
-      
+
       // Join a room specific to this user to allow targeted messages if needed
-      client.join(`user:${userId}`);
+      void client.join(`user:${userId}`);
       // Join the general analyst room to receive broadcasts
-      client.join('analysts');
+      void client.join("analysts");
 
       this.logger.log(`Client connected: ${client.id} (User: ${userId})`);
     } catch (error) {
@@ -79,20 +79,20 @@ export class StatusGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Emits a new complaint event to all connected analysts.
    */
   emitNewComplaint(payload: Record<string, any>) {
-    this.server.to('analysts').emit('new_complaint', payload);
+    this.server.to("analysts").emit("new_complaint", payload);
   }
 
   /**
    * Emits a status update event to all connected analysts.
    */
   emitStatusUpdate(payload: Record<string, any>) {
-    this.server.to('analysts').emit('status_updated', payload);
+    this.server.to("analysts").emit("status_updated", payload);
   }
 
   /**
    * Emits a critical alert to all connected analysts.
    */
   emitCriticalAlert(payload: Record<string, any>) {
-    this.server.to('analysts').emit('critical_alert', payload);
+    this.server.to("analysts").emit("critical_alert", payload);
   }
 }

@@ -1,5 +1,10 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import { Redis } from 'ioredis';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from "@nestjs/common";
+import { Redis } from "ioredis";
 
 /**
  * Service to manage WebSocket sessions using Redis.
@@ -11,9 +16,9 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
   private redisClient: Redis;
 
   async onModuleInit() {
-    const host = process.env.REDIS_HOST || 'localhost';
-    const port = parseInt(process.env.REDIS_PORT || '6379', 10);
-    const password = process.env.REDIS_PASSWORD || 'anonygate_pass';
+    const host = process.env.REDIS_HOST || "localhost";
+    const port = parseInt(process.env.REDIS_PORT || "6379", 10);
+    const password = process.env.REDIS_PASSWORD || "anonygate_pass";
 
     this.redisClient = new Redis({
       host,
@@ -25,11 +30,11 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    this.redisClient.on('connect', () => {
+    this.redisClient.on("connect", () => {
       this.logger.log(`Connected to Redis at ${host}:${port}`);
     });
 
-    this.redisClient.on('error', (err) => {
+    this.redisClient.on("error", (err) => {
       this.logger.error(`Redis connection error: ${err.message}`);
     });
   }
@@ -37,7 +42,7 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy() {
     if (this.redisClient) {
       this.redisClient.disconnect();
-      this.logger.log('Disconnected from Redis');
+      this.logger.log("Disconnected from Redis");
     }
   }
 
@@ -47,7 +52,7 @@ export class RedisSessionService implements OnModuleInit, OnModuleDestroy {
   async registerSession(userId: string, socketId: string): Promise<void> {
     await this.redisClient.sadd(`ws:user:${userId}`, socketId);
     // Expire the key after 24 hours to prevent stale data
-    await this.redisClient.expire(`ws:user:${userId}`, 86400); 
+    await this.redisClient.expire(`ws:user:${userId}`, 86400);
   }
 
   /**

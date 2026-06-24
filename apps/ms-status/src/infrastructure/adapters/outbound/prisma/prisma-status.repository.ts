@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
-import { CaseStatus } from '../../../../domain/entities/case-status.entity';
-import { StatusHistory } from '../../../../generated/prisma';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "./prisma.service";
+import { CaseStatus } from "../../../../domain/entities/case-status.entity";
+import { StatusHistory } from "../../../../generated/prisma";
 
 /**
  * Repository to handle operations on CaseStatus and StatusHistory.
@@ -52,7 +52,11 @@ export class PrismaStatusRepository {
   /**
    * Updates the status of a case.
    */
-  async updateStatus(id: string, newStatus: string, assignedTo?: string): Promise<void> {
+  async updateStatus(
+    id: string,
+    newStatus: string,
+    assignedTo?: string,
+  ): Promise<void> {
     await this.prisma.caseStatus.update({
       where: { id },
       data: {
@@ -81,13 +85,13 @@ export class PrismaStatusRepository {
     const records = await this.prisma.caseStatus.findMany({
       where: {
         urgency: {
-          in: ['HIGH', 'CRITICAL'],
+          in: ["HIGH", "CRITICAL"],
         },
         status: {
-          notIn: ['CLOSED', 'REJECTED'],
+          notIn: ["CLOSED", "REJECTED"],
         },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
     });
 
     return records.map(
@@ -126,7 +130,7 @@ export class PrismaStatusRepository {
   async findHistoryByCaseId(caseId: string): Promise<StatusHistory[]> {
     return this.prisma.statusHistory.findMany({
       where: { caseId },
-      orderBy: { changedAt: 'asc' }, // Order chronologically
+      orderBy: { changedAt: "asc" }, // Order chronologically
     });
   }
 }
