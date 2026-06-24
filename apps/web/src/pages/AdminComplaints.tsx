@@ -96,7 +96,8 @@ export default function AdminComplaints() {
     const token = localStorage.getItem('access_token');
     if (!token) return;
 
-    const baseUrl = (import.meta.env.VITE_API_STATUS_URL || 'http://localhost:3006').replace(/\/+$/, '');
+    // Forzar el uso del mismo origin (mismo puerto que el frontend, ej: 8080) para que pase por el Nginx correcto
+    const baseUrl = import.meta.env.PROD ? window.location.origin : 'http://localhost:3006';
     const socket = io(baseUrl, {
       path: '/ws/status',
       auth: { token }
