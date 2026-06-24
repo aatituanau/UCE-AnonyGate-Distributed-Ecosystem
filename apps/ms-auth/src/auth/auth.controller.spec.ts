@@ -50,7 +50,10 @@ describe('AuthController', () => {
       const loginDto = { email: 'test@test.com', password: 'password123' };
       const result = await controller.login(loginDto);
 
-      expect(authService.login).toHaveBeenCalledWith('test@test.com', 'password123');
+      expect(authService.login).toHaveBeenCalledWith(
+        'test@test.com',
+        'password123',
+      );
       expect(result).toEqual(mockResult);
     });
   });

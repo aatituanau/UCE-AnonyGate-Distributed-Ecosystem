@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateAnalystCommand } from '../../domain/commands/create-analyst.command';
 import { DeleteAnalystCommand } from '../../domain/commands/delete-analyst.command';

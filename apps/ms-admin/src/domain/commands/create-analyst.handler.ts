@@ -17,7 +17,9 @@ export class CreateAnalystHandler implements ICommandHandler<CreateAnalystComman
     });
 
     if (existingUser) {
-      throw new ConflictException(`El usuario con el correo ${command.email} ya existe.`);
+      throw new ConflictException(
+        `El usuario con el correo ${command.email} ya existe.`,
+      );
     }
 
     // 1. Ensure the 'analyst' role exists

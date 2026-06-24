@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/require-await, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -54,9 +54,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user is not found', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.login('test@test.com', 'password123'))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(
+        service.login('test@test.com', 'password123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException if password does not match', async () => {
@@ -68,9 +68,9 @@ describe('AuthService', () => {
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.login('test@test.com', 'wrong-password'))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(
+        service.login('test@test.com', 'wrong-password'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });
