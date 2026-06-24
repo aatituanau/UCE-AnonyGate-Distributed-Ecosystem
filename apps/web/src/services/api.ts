@@ -30,3 +30,16 @@ adminApi.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Instance for MS-Status (requires JWT for Analysts)
+export const statusApi = axios.create({
+  baseURL: import.meta.env.VITE_API_STATUS_URL || 'http://localhost:3006',
+});
+
+statusApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});

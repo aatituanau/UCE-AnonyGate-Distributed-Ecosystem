@@ -1,11 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
   output          = "../src/generated/prisma"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["public", "complaints"]
+  schemas  = ["public", "complaints", "status"]
 }
 
 // ==============================================
@@ -59,4 +60,22 @@ model Complaint {
   createdAt   DateTime @default(now())
 
   @@schema("complaints")
+}
+
+// ==============================================
+// SCHEMA: status (Case Statuses)
+// Required to get the true status of complaints
+// ==============================================
+
+model CaseStatus {
+  id          String   @id @default(uuid())
+  complaintId String   @unique @map("complaint_id")
+  status      String   @default("SUBMITTED")
+  urgency     String   @default("LOW")
+  assignedTo  String?  @map("assigned_to")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("case_statuses")
+  @@schema("status")
 }

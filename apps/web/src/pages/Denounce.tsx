@@ -1,8 +1,28 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 
 export default function Denounce() {
+  const getStatusColor = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'SUBMITTED':
+      case 'RECEIVED':
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'IN_REVIEW':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'AWAITING_INFO':
+        return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'RESOLVED':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'CLOSED':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'REJECTED':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-slate-50 text-slate-700 border-slate-200';
+    }
+  };
+
   const [formData, setFormData] = useState({ title: '', description: '', faculty: '' });
   const [loading, setLoading] = useState(false);
   const [resultAlias, setResultAlias] = useState<string | null>(null);
@@ -12,8 +32,16 @@ export default function Denounce() {
   interface TrackingStatus {
     alias: string;
     status: string;
+    urgency: string;
     faculty: string;
     submittedAt: string | number | Date;
+    history: {
+      id: string;
+      fromStatus: string;
+      toStatus: string;
+      changedBy: string;
+      changedAt: string;
+    }[];
   }
 
   // Status tracking state
@@ -56,12 +84,33 @@ export default function Denounce() {
     setTrackingStatus(null);
 
     try {
-      const API_ALIAS = import.meta.env.VITE_API_ALIAS_URL || 'http://localhost:3001';
-      const res = await axios.get(`${API_ALIAS}/aliases/${trackingAlias}/status`);
-      setTrackingStatus(res.data);
+      // Step 1: Get Complaint ID and details from Submission Service
+      const API_SUBMISSION = import.meta.env.VITE_API_SUBMISSION_URL || 'http://localhost:3003';
+      const submissionRes = await axios.get(`${API_SUBMISSION}/api/v1/complaints/${trackingAlias}`);
+      const complaintData = submissionRes.data;
+      const complaintId = complaintData.id;
+
+      // Step 2: Get live Status and History from Status Service
+      const API_STATUS = import.meta.env.VITE_API_STATUS_URL || 'http://localhost:3006';
+      const statusRes = await axios.get(`${API_STATUS}/status/${complaintId}`, {
+        headers: {
+          'x-alias-token': trackingAlias
+        }
+      });
+      const liveStatus = statusRes.data;
+
+      setTrackingStatus({
+        alias: trackingAlias,
+        status: liveStatus.status,
+        urgency: liveStatus.urgency,
+        faculty: complaintData.faculty,
+        submittedAt: complaintData.createdAt,
+        history: liveStatus.history || []
+      });
+
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setTrackingError(e.response?.data?.message || 'Alias no encontrado');
+      console.error(err);
+      setTrackingError('No se encontró información para este Alias o hubo un error de conexión.');
     }
   };
 
@@ -133,14 +182,20 @@ export default function Denounce() {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Building className="h-5 w-5 text-slate-400" />
                   </div>
-                  <input
-                    type="text"
+                  <select
                     required
                     value={formData.faculty}
                     onChange={(e) => setFormData({ ...formData, faculty: e.target.value })}
-                    className="input-premium pl-11"
-                    placeholder="Ej: Facultad de Ingeniería"
-                  />
+                    className="input-premium pl-11 w-full bg-white appearance-none"
+                  >
+                    <option value="" disabled>Seleccione una Facultad...</option>
+                    <option value="Facultad de Ingeniería">Facultad de Ingeniería</option>
+                    <option value="Facultad de Ciencias Médicas">Facultad de Ciencias Médicas</option>
+                    <option value="Facultad de Jurisprudencia">Facultad de Jurisprudencia</option>
+                    <option value="Facultad de Economía">Facultad de Economía</option>
+                    <option value="Facultad de Arquitectura">Facultad de Arquitectura</option>
+                    <option value="Facultad de Artes">Facultad de Artes</option>
+                  </select>
                 </div>
               </div>
 
@@ -211,12 +266,12 @@ export default function Denounce() {
                   <span className="text-xs font-bold tracking-wider text-slate-400 uppercase block mb-1">Identidad Segura</span>
                   <span className="font-mono text-xl text-blue-600 font-bold">{trackingStatus.alias}</span>
                 </div>
-                <div className="px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold tracking-wider shadow-sm">
+                <div className={`px-3 py-1.5 rounded-full border text-xs font-bold tracking-wider shadow-sm ${getStatusColor(trackingStatus.status)}`}>
                   {trackingStatus.status}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Facultad</span>
                   <span className="text-sm font-semibold text-slate-700">{trackingStatus.faculty}</span>
@@ -225,7 +280,39 @@ export default function Denounce() {
                   <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Fecha de envío</span>
                   <span className="text-sm font-semibold text-slate-700">{new Date(trackingStatus.submittedAt).toLocaleDateString()}</span>
                 </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Urgencia AI</span>
+                  <span className={`text-sm font-bold px-2 py-1 rounded-md ${trackingStatus.urgency === 'CRITICAL' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700'}`}>
+                    {trackingStatus.urgency}
+                  </span>
+                </div>
               </div>
+
+              {/* Timeline */}
+              {trackingStatus.history && trackingStatus.history.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <h4 className="text-sm font-bold text-slate-800 mb-6 flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                    <span>Línea de Tiempo del Caso</span>
+                  </h4>
+                  <div className="relative border-l-2 border-blue-100 ml-3 space-y-6">
+                    {trackingStatus.history.map((h, i) => (
+                      <div key={h.id} className="relative pl-6">
+                        <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-blue-500 border-4 border-slate-50"></div>
+                        <div className="text-xs font-bold text-blue-500 mb-1">
+                          {new Date(h.changedAt).toLocaleString()}
+                        </div>
+                        <div className="text-sm font-semibold text-slate-700">
+                          {i === 0 ? `Caso recibido (${h.toStatus})` : `Cambio de estado: ${h.fromStatus} → ${h.toStatus}`}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          Por: {h.changedBy === 'SYSTEM' ? 'Sistema Automático' : 'Analista'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
