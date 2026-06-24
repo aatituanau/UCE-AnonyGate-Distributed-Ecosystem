@@ -96,7 +96,8 @@ export default function AdminComplaints() {
     const token = localStorage.getItem('access_token');
     if (!token) return;
 
-    const socket = io(import.meta.env.VITE_API_STATUS_URL || 'http://localhost:3006', {
+    const baseUrl = (import.meta.env.VITE_API_STATUS_URL || 'http://localhost:3006').replace(/\/+$/, '');
+    const socket = io(baseUrl, {
       path: '/ws/status',
       auth: { token }
     });
