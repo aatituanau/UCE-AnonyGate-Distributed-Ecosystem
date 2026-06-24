@@ -96,7 +96,7 @@ export default function AdminComplaints() {
     const token = localStorage.getItem('access_token');
     if (!token) return;
 
-    // Forzar el uso del mismo origin (mismo puerto que el frontend, ej: 8080) para que pase por el Nginx correcto
+    // Force the use of the same origin (same port as the frontend, e.g. 8080) to route through the correct Nginx proxy
     const baseUrl = import.meta.env.PROD ? window.location.origin : 'http://localhost:3006';
     const socket = io(baseUrl, {
       path: '/ws/status',
