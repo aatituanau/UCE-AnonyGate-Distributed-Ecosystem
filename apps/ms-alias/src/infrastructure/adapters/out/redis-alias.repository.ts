@@ -6,7 +6,9 @@ import { Complaint } from '../../../domain/entities/complaint.entity';
 import Redis from 'ioredis';
 
 @Injectable()
-export class RedisAliasRepository implements AliasRepositoryPort, OnModuleInit, OnModuleDestroy {
+export class RedisAliasRepository
+  implements AliasRepositoryPort, OnModuleInit, OnModuleDestroy
+{
   private readonly redis: Redis;
 
   constructor() {
@@ -27,12 +29,21 @@ export class RedisAliasRepository implements AliasRepositoryPort, OnModuleInit, 
   }
 
   // TTL: 180 days in seconds (configurable via env, defaults to spec value)
-  private readonly TTL_SECONDS = parseInt(process.env.ALIAS_TTL_DAYS || '180') * 24 * 60 * 60;
+  private readonly TTL_SECONDS =
+    parseInt(process.env.ALIAS_TTL_DAYS || '180') * 24 * 60 * 60;
 
-  async saveComplaintWithAlias(complaint: Complaint, alias: Alias): Promise<void> {
+  async saveComplaintWithAlias(
+    complaint: Complaint,
+    alias: Alias,
+  ): Promise<void> {
     const payload = JSON.stringify({ alias, complaint });
     // Key expires automatically after TTL — no manual cleanup needed
-    await this.redis.set(`alias:${alias.code}`, payload, 'EX', this.TTL_SECONDS);
+    await this.redis.set(
+      `alias:${alias.code}`,
+      payload,
+      'EX',
+      this.TTL_SECONDS,
+    );
   }
 
   async findComplaintByAlias(aliasCode: string): Promise<Complaint | null> {
@@ -41,7 +52,7 @@ export class RedisAliasRepository implements AliasRepositoryPort, OnModuleInit, 
 
     const parsed = JSON.parse(data);
     const c = parsed.complaint;
-    
+
     // Return pure Domain Entity
     return new Complaint(
       c.id,

@@ -14,8 +14,10 @@ export class AliasGrpcController {
   async validateToken(data: { token: string }): Promise<{ isValid: boolean }> {
     console.log(`[gRPC] Validating token: ${data.token}`);
     // Look up the complaint by the provided alias token
-    const complaint = await this.aliasRepository.findComplaintByAlias(data.token);
-    
+    const complaint = await this.aliasRepository.findComplaintByAlias(
+      data.token,
+    );
+
     // If it exists, the token is valid
     return {
       isValid: !!complaint,

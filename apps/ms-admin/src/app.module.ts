@@ -11,7 +11,11 @@ import { CreateAnalystHandler } from './domain/commands/create-analyst.handler';
 import { DeleteAnalystHandler } from './domain/commands/delete-analyst.handler';
 
 const CommandHandlers = [CreateAnalystHandler, DeleteAnalystHandler];
-const QueryHandlers = [GetComplaintsHandler, GetAnalystsHandler, GetDashboardStatsHandler];
+const QueryHandlers = [
+  GetComplaintsHandler,
+  GetAnalystsHandler,
+  GetDashboardStatsHandler,
+];
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), CqrsModule, PrismaModule],

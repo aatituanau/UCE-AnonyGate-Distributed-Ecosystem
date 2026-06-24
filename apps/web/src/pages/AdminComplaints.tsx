@@ -11,8 +11,9 @@ export default function AdminComplaints() {
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsAdmin(payload.role?.toLowerCase() === 'admin');
-      } catch (e) {
+      } catch {
         // invalid token
       }
     }
@@ -61,6 +62,7 @@ export default function AdminComplaints() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modal state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
   const [newStatus, setNewStatus] = useState('');
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -125,6 +127,7 @@ export default function AdminComplaints() {
     c.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const openModal = (complaint: any) => {
     setSelectedComplaint(complaint);
     setNewStatus(complaint.status);
@@ -145,6 +148,7 @@ export default function AdminComplaints() {
       // Update local state
       setComplaints(prev => prev.map(c => c.id === selectedComplaint.id ? { ...c, status: newStatus } : c));
       setTimeout(() => setSelectedComplaint(null), 1500);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setStatusUpdateError(err.response?.data?.message || 'Error al actualizar el estado. Verifica que la transición de la máquina de estados sea válida.');
     } finally {

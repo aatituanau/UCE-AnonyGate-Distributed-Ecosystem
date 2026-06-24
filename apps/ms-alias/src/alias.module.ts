@@ -15,4 +15,4 @@ import { ALIAS_REPOSITORY_PORT } from './application/ports/alias.repository.port
     },
   ],
 })
-export class AliasModule { }
+export class AliasModule {}
