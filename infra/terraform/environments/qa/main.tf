@@ -119,26 +119,25 @@ module "ec2_3_ms_processing" {
               EOF
 }
 
-# --- EC2-4: PRIVATE SUBNET (ms-status-chat, ms-audit) ---
-# TEMPORARILY DISABLED FOR RAPID TESTING
-# module "ec2_4_ms_tracking" {
-#   source                      = "../../modules/ec2"
-#   environment                 = var.environment
-#   instance_name               = "ec2-4-ms-tracking"
-#   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_ids[0]
-#   instance_type               = "t2.micro"
-#   associate_public_ip_address = false
-#   allowed_ports               = [22, 3006, 3007]
-#   key_name                    = var.key_name
-#   user_data = <<-EOF
-#               #!/bin/bash
-#               apt-get update
-#               apt-get install -y docker.io docker-compose
-#               systemctl start docker
-#               systemctl enable docker
-#               EOF
-# }
+# --- EC2-4: PRIVATE SUBNET (ms-status :3006, ms-audit :3005) ---
+module "ec2_4_ms_status" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-4-ms-status"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
+  instance_type               = "t3.small"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3005, 3006, 3007]
+  key_name                    = var.key_name
+  user_data                   = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
 
 # --- EC2-5: PRIVATE SUBNET (ms-sanitization, ms-ai) ---
 # TEMPORARILY DISABLED FOR RAPID TESTING
@@ -183,8 +182,10 @@ module "ec2_6_db_postgres" {
               EOF
 }
 
-# --- EC2-7: PRIVATE SUBNET (MongoDB) ---
-# TEMPORARILY DISABLED FOR RAPID TESTING
+# --- EC2-7: PRIVATE SUBNET (MongoDB — shared for MS-03, MS-05, MS-07, MS-10) ---
+# TEMPORARILY DISABLED — enable before deploying MS-03, MS-05, MS-07 or MS-10
+# Databases: DB_Forms (MS-03) | DB_Evidence (MS-05) | DB_AI_Summaries (MS-07)
+#            DB_AuditLog (MS-10) | DB_AuditArchive (MS-10)
 # module "ec2_7_db_mongodb" {
 #   source                      = "../../modules/ec2"
 #   environment                 = var.environment
@@ -195,13 +196,19 @@ module "ec2_6_db_postgres" {
 #   associate_public_ip_address = false
 #   allowed_ports               = [22, 27017]
 #   key_name                    = var.key_name
-#   user_data = <<-EOF
+#   user_data                   = <<-EOF
 #               #!/bin/bash
 #               apt-get update
 #               apt-get install -y docker.io docker-compose
 #               systemctl start docker
 #               systemctl enable docker
-#               docker run -d --name mongodb -e MONGODB_ROOT_PASSWORD=mongo_root -e MONGODB_USERNAME=anonygate -e MONGODB_PASSWORD=anonygate_pass -e MONGODB_DATABASE=anonygate_db -p 27017:27017 bitnami/mongodb:7.0
+#               mkdir -p /home/ubuntu/mongo_data
+#               docker run -d --name mongodb --restart unless-stopped \
+#                 -v /home/ubuntu/mongo_data:/data/db \
+#                 -e MONGO_INITDB_ROOT_USERNAME=anonygate \
+#                 -e MONGO_INITDB_ROOT_PASSWORD=anonygate_pass \
+#                 -p 27017:27017 \
+#                 mongo:7.0
 #               EOF
 # }
 
@@ -241,5 +248,18 @@ module "ec2_8_db_queues" {
                 -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
                 --link zookeeper \
                 confluentinc/cp-kafka:7.5.0
+                
+              # Start RabbitMQ
+              docker run -d --name rabbitmq --restart unless-stopped -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+              
+              # Start Mosquitto
+              cat > mosquitto.conf <<'MQCONF'
+              listener 1883
+              allow_anonymous true
+              listener 9001
+              protocol websockets
+              allow_anonymous true
+              MQCONF
+              docker run -d --name mosquitto --restart unless-stopped -p 1883:1883 -p 9001:9001 -v $(pwd)/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto:2.0
               EOF
 }

@@ -18,7 +18,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [ms-auth, ms-alias, ms-submission, ms-admin, web]
+        service: [ms-auth, ms-alias, ms-submission, ms-admin, ms-status, web]
     
     steps:
       - uses: actions/checkout@v4
@@ -123,6 +123,7 @@ jobs:
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
+            echo "REDIS_PASSWORD=anonygate_pass" >> .env
             echo "KAFKA_BROKER=${{ secrets.DB_QUEUES_IP }}:9092" >> .env
 
             # Free disk space before pulling new images
@@ -210,7 +211,10 @@ jobs:
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
+            echo "REDIS_PASSWORD=anonygate_pass" >> .env
             echo "KAFKA_BROKER=${{ secrets.DB_QUEUES_IP }}:9092" >> .env
+            echo "RABBITMQ_URL=amqp://guest:guest@${{ secrets.DB_QUEUES_IP }}:5672" >> .env
+            echo "MQTT_BROKER_URL=mqtt://${{ secrets.DB_QUEUES_IP }}:1883" >> .env
 
             sudo docker system prune -af --volumes
             sudo docker network create anonygate-net || true
@@ -259,6 +263,62 @@ jobs:
             echo "=== LOGS DE MS-ADMIN ==="
             sudo docker logs ms-admin
 
+      - name: Deploy Status Microservice via Bastion
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST_MS_STATUS }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.EC2_HOST_NGINX }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Waiting for cloud-init to finish..."
+            while [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 5; done
+            
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found! Forcing installation..."
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose
+            fi
+            
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            echo "DATABASE_URL=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=status" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
+            echo "REDIS_PORT=6379" >> .env
+            echo "REDIS_PASSWORD=anonygate_pass" >> .env
+            echo "KAFKA_BROKER=${{ secrets.DB_QUEUES_IP }}:9092" >> .env
+            echo "RABBITMQ_URL=amqp://guest:guest@${{ secrets.DB_QUEUES_IP }}:5672" >> .env
+            echo "MQTT_BROKER_URL=mqtt://${{ secrets.DB_QUEUES_IP }}:1883" >> .env
+
+            sudo docker system prune -af --volumes
+            sudo docker network create anonygate-net || true
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-status:latest
+
+            echo "Starting Replica Test for ms-status..."
+            sudo docker run -d --name ms-status-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-status:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-status-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-status-test
+              sudo docker stop ms-status || true
+              sudo docker rm ms-status || true
+              sudo docker run -d --name ms-status --network anonygate-net -p 3006:3006 --env-file .env --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-status:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-status-test
+              exit 1
+            fi
+            
+            echo "Running MS-Status database push..."
+            sleep 5
+            sudo docker exec ms-status npx prisma db push --schema=prisma/schema.prisma || true
+
+            echo "=== LOGS DE MS-STATUS ==="
+            sudo docker logs ms-status
+
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -293,7 +353,9 @@ jobs:
               -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_ADMIN_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
+              -e VITE_API_STATUS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               -e MS_PROCESSING_IP="${{ secrets.EC2_HOST_MS_PROCESSING }}" \
+              -e MS_STATUS_IP="${{ secrets.EC2_HOST_MS_STATUS }}" \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-web:latest

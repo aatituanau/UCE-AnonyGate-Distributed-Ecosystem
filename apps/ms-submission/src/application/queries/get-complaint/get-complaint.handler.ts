@@ -12,7 +12,9 @@ export class GetComplaintHandler implements IQueryHandler<GetComplaintQuery> {
   ) {}
 
   async execute(query: GetComplaintQuery): Promise<any> {
-    const complaint = await this.complaintRepository.findByAliasToken(query.aliasToken);
+    const complaint = await this.complaintRepository.findByAliasToken(
+      query.aliasToken,
+    );
     if (!complaint) {
       throw new NotFoundException('Complaint not found for the provided token');
     }

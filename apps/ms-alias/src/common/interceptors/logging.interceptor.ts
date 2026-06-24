@@ -1,4 +1,10 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor, Logger } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+  Logger,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -11,7 +17,9 @@ export class LoggingInterceptor implements NestInterceptor {
     let requestInfo = 'Unknown context';
 
     if (type === 'http') {
-      const request = context.switchToHttp().getRequest<{ method: string; url: string }>();
+      const request = context
+        .switchToHttp()
+        .getRequest<{ method: string; url: string }>();
       requestInfo = `HTTP ${request.method} ${request.url}`;
     } else if (type === 'rpc') {
       requestInfo = `gRPC Call`;
@@ -20,13 +28,17 @@ export class LoggingInterceptor implements NestInterceptor {
     const now = Date.now();
     this.logger.log(`[REQUEST IN] Starting: ${requestInfo}`);
 
-    return next
-      .handle()
-      .pipe(
-        tap({
-          next: () => this.logger.log(`[RESPONSE OUT] Completed: ${requestInfo} [${Date.now() - now}ms]`),
-          error: (error: Error) => this.logger.error(`[ERROR OUT] Failed: ${requestInfo} - Reason: ${error?.message || 'Unknown Error'} [${Date.now() - now}ms]`),
-        }),
-      );
+    return next.handle().pipe(
+      tap({
+        next: () =>
+          this.logger.log(
+            `[RESPONSE OUT] Completed: ${requestInfo} [${Date.now() - now}ms]`,
+          ),
+        error: (error: Error) =>
+          this.logger.error(
+            `[ERROR OUT] Failed: ${requestInfo} - Reason: ${error?.message || 'Unknown Error'} [${Date.now() - now}ms]`,
+          ),
+      }),
+    );
   }
 }

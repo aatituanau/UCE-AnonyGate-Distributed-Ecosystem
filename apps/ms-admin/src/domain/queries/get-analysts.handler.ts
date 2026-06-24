@@ -16,7 +16,7 @@ export class GetAnalystsHandler implements IQueryHandler<GetAnalystsQuery> {
       WHERE r.name IN ('analyst', 'admin') 
       ORDER BY u.created_at DESC;
     `;
-    
+
     return analysts;
   }
 }

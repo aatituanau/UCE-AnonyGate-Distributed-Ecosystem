@@ -5,6 +5,6 @@ import { Complaint } from '../../domain/entities/complaint.entity';
 export const ALIAS_REPOSITORY_PORT = 'ALIAS_REPOSITORY_PORT';
 
 export interface AliasRepositoryPort {
-    saveComplaintWithAlias(complaint: Complaint, alias: Alias): Promise<void>;
-    findComplaintByAlias(aliasCode: string): Promise<Complaint | null>;
+  saveComplaintWithAlias(complaint: Complaint, alias: Alias): Promise<void>;
+  findComplaintByAlias(aliasCode: string): Promise<Complaint | null>;
 }

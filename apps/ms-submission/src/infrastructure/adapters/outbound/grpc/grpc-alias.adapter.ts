@@ -25,13 +25,16 @@ export class GrpcAliasAdapter implements AliasServicePort, OnModuleInit {
   private aliasService: AliasGrpcService;
 
   async onModuleInit() {
-    this.aliasService = this.client.getService<AliasGrpcService>('AliasService');
+    this.aliasService =
+      this.client.getService<AliasGrpcService>('AliasService');
   }
 
   async validateToken(token: string): Promise<boolean> {
     try {
       console.log(`[gRPC Client] Asking MS-02 to validate token: ${token}`);
-      const response = await firstValueFrom(this.aliasService.validateToken({ token })) as any;
+      const response = (await firstValueFrom(
+        this.aliasService.validateToken({ token }),
+      )) as any;
       return response.isValid;
     } catch (error) {
       console.error('[gRPC Client] Error validating token', error);

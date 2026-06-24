@@ -1,0 +1,43 @@
+// Prisma schema for ms-status (MS-08)
+// Database: PostgreSQL schema "status" on EC2-6
+// Shares the same PostgreSQL instance as ms-auth (schema=public) and ms-submission (schema=complaints)
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["status"]
+}
+
+/// Tracks the current state and urgency of each complaint case.
+/// One-to-one relationship with ms-submission's Complaint via complaintId.
+model CaseStatus {
+  id          String   @id @default(uuid())
+  complaintId String   @unique @map("complaint_id")
+  status      String   @default("SUBMITTED")
+  urgency     String   @default("LOW")
+  assignedTo  String?  @map("assigned_to")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("case_statuses")
+  @@schema("status")
+}
+
+/// Audit trail of all state transitions for a case.
+/// Each row records: who changed the status, from what, to what, and when.
+model StatusHistory {
+  id         String   @id @default(uuid())
+  caseId     String   @map("case_id")
+  fromStatus String   @map("from_status")
+  toStatus   String   @map("to_status")
+  changedBy  String   @map("changed_by")
+  changedAt  DateTime @default(now()) @map("changed_at")
+
+  @@map("status_history")
+  @@schema("status")
+}

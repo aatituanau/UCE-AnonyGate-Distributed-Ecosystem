@@ -11,10 +11,12 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     ConfigModule.forRoot(),
     PrismaModule,
     AuthModule,
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 30, // Limit each IP to 30 requests per minute
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 30, // Limit each IP to 30 requests per minute
+      },
+    ]),
   ],
   controllers: [],
   providers: [
@@ -28,4 +30,4 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}
