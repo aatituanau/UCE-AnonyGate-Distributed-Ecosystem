@@ -59,9 +59,17 @@ export class StatusService {
    * Transitions a case to a new status, enforcing state machine rules.
    */
   async transitionStatus(complaintId: string, newStatus: string, analystId: string): Promise<void> {
-    const caseStatus = await this.repository.findByComplaintId(complaintId);
+    let caseStatus = await this.repository.findByComplaintId(complaintId);
+    
+    // [SRE/Resilience] Self-healing mechanism: Lazy initialization
+    // If ms-status missed the Kafka event (or complaint was created before ms-status existed),
+    // we initialize it on the fly instead of throwing a 404 error.
     if (!caseStatus) {
-      throw new NotFoundException(`Case status for complaint ${complaintId} not found`);
+      await this.initializeCase(complaintId);
+      caseStatus = await this.repository.findByComplaintId(complaintId);
+      if (!caseStatus) {
+        throw new NotFoundException(`Failed to lazy-initialize case status for complaint ${complaintId}`);
+      }
     }
 
     const fromStatus = caseStatus.status as ComplaintStatus;
@@ -110,9 +118,15 @@ export class StatusService {
    * Gets a single case by complaint ID.
    */
   async getCaseByComplaintId(complaintId: string) {
-    const caseStatus = await this.repository.findByComplaintId(complaintId);
+    let caseStatus = await this.repository.findByComplaintId(complaintId);
+    
+    // [SRE/Resilience] Self-healing mechanism: Lazy initialization
     if (!caseStatus) {
-      throw new NotFoundException(`Case status for complaint ${complaintId} not found`);
+      await this.initializeCase(complaintId);
+      caseStatus = await this.repository.findByComplaintId(complaintId);
+      if (!caseStatus) {
+        throw new NotFoundException(`Failed to lazy-initialize case status for complaint ${complaintId}`);
+      }
     }
 
     const nextStates = getValidNextStates(caseStatus.status as ComplaintStatus);

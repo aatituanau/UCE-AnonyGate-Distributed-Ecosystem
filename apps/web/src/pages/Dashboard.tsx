@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Shield, RefreshCw, AlertTriangle, CheckCircle, Clock, ShieldCheck, Activity, User, ArrowRight, Server, FileText } from 'lucide-react';
+import { Shield, RefreshCw, AlertTriangle, CheckCircle, Clock, ShieldCheck, Activity, User, ArrowRight, Server, FileText, X } from 'lucide-react';
 import { authApi, adminApi } from '../services/api';
+import { io } from 'socket.io-client';
 
 interface TokenPayload {
   email: string;
@@ -26,7 +27,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [stats, setStats] = useState({ activeComplaints: 0, reviewComplaints: 0, activeAnalysts: 0 });
+  const [stats, setStats] = useState({ 
+    activeComplaints: 0, 
+    reviewComplaints: 0, 
+    awaitingInfoComplaints: 0,
+    closedComplaints: 0,
+    rejectedComplaints: 0,
+    activeAnalysts: 0 
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -38,6 +46,27 @@ export default function Dashboard() {
       }
     };
     fetchStats();
+
+    // Setup WebSockets for Real-Time Metrics Update
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    const socket = io(import.meta.env.VITE_API_STATUS_URL || 'http://localhost:3006', {
+      path: '/ws/status',
+      auth: { token }
+    });
+
+    socket.on('new_complaint', () => {
+      fetchStats();
+    });
+
+    socket.on('status_updated', () => {
+      fetchStats();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const handleRefresh = async () => {
@@ -84,37 +113,70 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Metrics Row */}
-      <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6 mb-8`}>
-        <div className="card-premium p-6 flex items-center">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mr-4">
-            <Activity className="w-7 h-7 text-[#0033A0]" />
+      {/* Workload Metrics Row */}
+      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Carga de Trabajo Actual</h3>
+      <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 mb-8`}>
+        <div className="card-premium p-6 flex items-center border-l-4 border-slate-300">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mr-4">
+            <Activity className="w-7 h-7 text-slate-500" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Denuncias Activas</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recibidas</p>
             <h3 className="text-3xl font-extrabold text-gray-900 mt-1">{stats.activeComplaints}</h3>
           </div>
         </div>
-        <div className="card-premium p-6 flex items-center">
-          <div className="w-14 h-14 rounded-2xl bg-yellow-50 flex items-center justify-center mr-4">
-            <Clock className="w-7 h-7 text-[#F2A900]" />
+        <div className="card-premium p-6 flex items-center border-l-4 border-amber-400">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mr-4">
+            <Clock className="w-7 h-7 text-amber-500" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">En Revisión</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">En Revisión</p>
             <h3 className="text-3xl font-extrabold text-gray-900 mt-1">{stats.reviewComplaints}</h3>
           </div>
         </div>
+        <div className="card-premium p-6 flex items-center border-l-4 border-orange-400">
+          <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mr-4">
+            <AlertTriangle className="w-7 h-7 text-orange-500" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Esperando Info</p>
+            <h3 className="text-3xl font-extrabold text-gray-900 mt-1">{stats.awaitingInfoComplaints}</h3>
+          </div>
+        </div>
         {isAdmin && (
-          <div className="card-premium p-6 flex items-center">
-            <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center mr-4">
-              <ShieldCheck className="w-7 h-7 text-green-600" />
+          <div className="card-premium p-6 flex items-center border-l-4 border-[#0033A0]">
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mr-4">
+              <ShieldCheck className="w-7 h-7 text-[#0033A0]" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Analistas Activos</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Analistas</p>
               <h3 className="text-3xl font-extrabold text-gray-900 mt-1">{stats.activeAnalysts}</h3>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Historical Metrics Row */}
+      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Histórico (Total)</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="card-premium p-6 flex items-center border-l-4 border-indigo-500 opacity-80 hover:opacity-100 transition-opacity">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mr-4">
+            <CheckCircle className="w-7 h-7 text-indigo-500" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cerradas (Resueltas)</p>
+            <h3 className="text-3xl font-extrabold text-gray-900 mt-1">{stats.closedComplaints}</h3>
+          </div>
+        </div>
+        <div className="card-premium p-6 flex items-center border-l-4 border-rose-500 opacity-80 hover:opacity-100 transition-opacity">
+          <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center mr-4">
+            <X className="w-7 h-7 text-rose-500" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Rechazadas</p>
+            <h3 className="text-3xl font-extrabold text-gray-900 mt-1">{stats.rejectedComplaints}</h3>
+          </div>
+        </div>
       </div>
 
       {/* Profile & Actions Row */}

@@ -3,6 +3,15 @@ import axios from 'axios';
 import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 
 export default function Denounce() {
+  const statusLabels: Record<string, string> = {
+    'SUBMITTED': 'Recibido',
+    'RECEIVED': 'Recibido',
+    'IN_REVIEW': 'En Revisión',
+    'AWAITING_INFO': 'Esperando Información',
+    'CLOSED': 'Cerrado',
+    'REJECTED': 'Rechazado',
+  };
+
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'SUBMITTED':
@@ -267,7 +276,7 @@ export default function Denounce() {
                   <span className="font-mono text-xl text-blue-600 font-bold">{trackingStatus.alias}</span>
                 </div>
                 <div className={`px-3 py-1.5 rounded-full border text-xs font-bold tracking-wider shadow-sm ${getStatusColor(trackingStatus.status)}`}>
-                  {trackingStatus.status}
+                  {statusLabels[trackingStatus.status] || trackingStatus.status}
                 </div>
               </div>
 
@@ -303,7 +312,9 @@ export default function Denounce() {
                           {new Date(h.changedAt).toLocaleString()}
                         </div>
                         <div className="text-sm font-semibold text-slate-700">
-                          {i === 0 ? `Caso recibido (${h.toStatus})` : `Cambio de estado: ${h.fromStatus} → ${h.toStatus}`}
+                          {i === 0
+                            ? `Caso recibido (${statusLabels[h.toStatus] || h.toStatus})`
+                            : `Cambio de estado: ${statusLabels[h.fromStatus] || h.fromStatus} → ${statusLabels[h.toStatus] || h.toStatus}`}
                         </div>
                         <div className="text-xs text-slate-500 mt-1">
                           Por: {h.changedBy === 'SYSTEM' ? 'Sistema Automático' : 'Analista'}

@@ -1,8 +1,41 @@
 import { useState, useEffect } from 'react';
 import { adminApi, statusApi } from '../services/api';
 import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 export default function AdminComplaints() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setIsAdmin(payload.role?.toLowerCase() === 'admin');
+      } catch (e) {
+        // invalid token
+      }
+    }
+  }, []);
+
+  const statusLabels: Record<string, string> = {
+    'SUBMITTED': 'Recibido',
+    'RECEIVED': 'Recibido',
+    'IN_REVIEW': 'En Revisión',
+    'AWAITING_INFO': 'Esperando Información',
+    'CLOSED': 'Cerrado',
+    'REJECTED': 'Rechazado',
+  };
+
+  const validTransitions: Record<string, string[]> = {
+    'SUBMITTED': ['IN_REVIEW'],
+    'RECEIVED': ['IN_REVIEW'],
+    'IN_REVIEW': ['AWAITING_INFO', 'CLOSED', 'REJECTED'],
+    'AWAITING_INFO': ['IN_REVIEW', 'CLOSED', 'REJECTED'],
+    'CLOSED': [],
+    'REJECTED': [],
+  };
+
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'SUBMITTED':
@@ -12,8 +45,6 @@ export default function AdminComplaints() {
         return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'AWAITING_INFO':
         return 'bg-orange-50 text-orange-700 border-orange-200';
-      case 'RESOLVED':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'CLOSED':
         return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       case 'REJECTED':
@@ -58,6 +89,34 @@ export default function AdminComplaints() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchComplaints();
+
+    // Setup WebSockets for Real-Time Updates
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    const socket = io(import.meta.env.VITE_API_STATUS_URL || 'http://localhost:3006', {
+      path: '/ws/status',
+      auth: { token }
+    });
+
+    socket.on('connect', () => {
+      console.log('🔗 [WebSockets] Conectado a ms-status en tiempo real.');
+    });
+
+    socket.on('new_complaint', (payload) => {
+      console.log('🔔 [WebSockets] Nueva denuncia recibida!', payload);
+      // Actualizar tabla sin recargar página
+      fetchComplaints();
+    });
+
+    socket.on('status_updated', (payload) => {
+      console.log('🔄 [WebSockets] Estado actualizado!', payload);
+      fetchComplaints();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const filteredComplaints = complaints.filter(c => 
@@ -144,27 +203,27 @@ export default function AdminComplaints() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
-                    <th className="p-4 font-semibold">ID</th>
-                    <th className="p-4 font-semibold">Alias Token</th>
-                    <th className="p-4 font-semibold">Estado</th>
-                    <th className="p-4 font-semibold">Fecha de Creación</th>
-                    <th className="p-4 font-semibold text-right">Acciones</th>
+                    <th className="p-4 font-semibold whitespace-nowrap">ID</th>
+                    <th className="p-4 font-semibold whitespace-nowrap">Alias Token</th>
+                    <th className="p-4 font-semibold whitespace-nowrap">Estado</th>
+                    <th className="p-4 font-semibold whitespace-nowrap">Fecha de Creación</th>
+                    <th className="p-4 font-semibold text-right whitespace-nowrap">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredComplaints.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-mono text-xs text-slate-500">{c.id.slice(0, 8)}...</td>
-                      <td className="p-4 font-mono font-medium text-slate-800">{c.aliasToken}</td>
-                      <td className="p-4">
+                      <td className="p-4 font-mono text-xs text-slate-500 whitespace-nowrap">{c.id.slice(0, 8)}...</td>
+                      <td className="p-4 font-mono font-medium text-slate-800 whitespace-nowrap">{c.aliasToken}</td>
+                      <td className="p-4 whitespace-nowrap">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(c.status)}`}>
-                          {c.status}
+                          {statusLabels[c.status] || c.status}
                         </span>
                       </td>
-                      <td className="p-4 text-sm text-slate-600">
+                      <td className="p-4 text-sm text-slate-600 whitespace-nowrap">
                         {new Date(c.createdAt).toLocaleString()}
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right whitespace-nowrap">
                         <button 
                           onClick={() => openModal(c)}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -204,18 +263,29 @@ export default function AdminComplaints() {
                 <select 
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                  disabled={isAdmin || validTransitions[selectedComplaint.status]?.length === 0}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <option value="SUBMITTED">SUBMITTED (Recibido)</option>
-                  <option value="IN_REVIEW">IN_REVIEW (En Revisión)</option>
-                  <option value="AWAITING_INFO">AWAITING_INFO (Esperando Info)</option>
-                  <option value="RESOLVED">RESOLVED (Resuelto)</option>
-                  <option value="CLOSED">CLOSED (Cerrado)</option>
-                  <option value="REJECTED">REJECTED (Rechazado)</option>
+                  <option value={selectedComplaint.status}>{statusLabels[selectedComplaint.status] || selectedComplaint.status} (Actual)</option>
+                  {(validTransitions[selectedComplaint.status] || []).map((status) => (
+                    <option key={status} value={status}>
+                      {statusLabels[status] || status}
+                    </option>
+                  ))}
                 </select>
-                <p className="text-xs text-slate-500 mt-2">
-                  Nota: La máquina de estados validará si la transición desde el estado actual ({selectedComplaint.status}) es permitida.
-                </p>
+                {isAdmin ? (
+                  <p className="text-xs text-red-500 mt-2 font-medium">
+                    Como Administrador, solo tienes permisos de lectura. Solo los Oficiales de Cumplimiento (Analistas) pueden cambiar el estado.
+                  </p>
+                ) : validTransitions[selectedComplaint.status]?.length === 0 ? (
+                  <p className="text-xs text-red-500 mt-2 font-medium">
+                    Este es un estado terminal. El caso ya no puede ser modificado.
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500 mt-2">
+                    Solo se muestran las transiciones permitidas por la máquina de estados desde {statusLabels[selectedComplaint.status]}.
+                  </p>
+                )}
               </div>
 
               {statusUpdateError && (
@@ -243,7 +313,7 @@ export default function AdminComplaints() {
               </button>
               <button 
                 onClick={handleUpdateStatus}
-                disabled={statusUpdating || newStatus === selectedComplaint.status}
+                disabled={isAdmin || statusUpdating || newStatus === selectedComplaint.status}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 flex items-center space-x-2"
               >
                 {statusUpdating && <RefreshCw className="w-4 h-4 animate-spin" />}
