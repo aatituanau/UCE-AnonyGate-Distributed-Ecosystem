@@ -119,4 +119,14 @@ export class PrismaStatusRepository {
       },
     });
   }
+
+  /**
+   * Finds the history of state transitions for a given case.
+   */
+  async findHistoryByCaseId(caseId: string): Promise<StatusHistory[]> {
+    return this.prisma.statusHistory.findMany({
+      where: { caseId },
+      orderBy: { changedAt: 'asc' }, // Order chronologically
+    });
+  }
 }

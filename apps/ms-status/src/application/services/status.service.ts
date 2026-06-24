@@ -116,10 +116,12 @@ export class StatusService {
     }
 
     const nextStates = getValidNextStates(caseStatus.status as ComplaintStatus);
+    const history = await this.repository.findHistoryByCaseId(caseStatus.id);
 
     return {
       ...caseStatus,
       validNextStates: nextStates,
+      history,
     };
   }
 
