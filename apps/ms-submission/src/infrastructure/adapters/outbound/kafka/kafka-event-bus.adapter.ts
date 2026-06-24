@@ -53,6 +53,11 @@ export class KafkaEventBusAdapter implements EventBusPort, OnModuleInit, OnModul
 
   async publish(topic: string, event: any): Promise<void> {
     this.logger.log(`[EVENT OUT] Publishing event to topic "${topic}": ${JSON.stringify(event)}`);
+    try {
+      await this.producer.connect(); // Ensure it's connected before sending
+    } catch (e) {
+      this.logger.warn(`Producer reconnection attempt: ${(e as Error).message}`);
+    }
     await this.producer.send({
       topic,
       messages: [
