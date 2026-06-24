@@ -119,27 +119,25 @@ module "ec2_3_ms_processing" {
               EOF
 }
 
-# --- EC2-4: PRIVATE SUBNET (ms-status-chat :3006, ms-audit :3005) ---
-# TEMPORARILY DISABLED — enable when MS-08 is ready to deploy
-# instance_type = t3.small (required: NestJS + PostgreSQL schema=status + Redis for WebSocket sessions)
-# module "ec2_4_ms_tracking" {
-#   source                      = "../../modules/ec2"
-#   environment                 = var.environment
-#   instance_name               = "ec2-4-ms-tracking"
-#   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_ids[0]
-#   instance_type               = "t3.small"
-#   associate_public_ip_address = false
-#   allowed_ports               = [22, 3005, 3006, 3007]
-#   key_name                    = var.key_name
-#   user_data                   = <<-EOF
-#               #!/bin/bash
-#               apt-get update
-#               apt-get install -y docker.io docker-compose
-#               systemctl start docker
-#               systemctl enable docker
-#               EOF
-# }
+# --- EC2-4: PRIVATE SUBNET (ms-status :3006, ms-audit :3005) ---
+module "ec2_4_ms_status" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-4-ms-status"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
+  instance_type               = "t3.small"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3005, 3006, 3007]
+  key_name                    = var.key_name
+  user_data                   = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
 
 # --- EC2-5: PRIVATE SUBNET (ms-sanitization, ms-ai) ---
 # TEMPORARILY DISABLED FOR RAPID TESTING
@@ -250,5 +248,18 @@ module "ec2_8_db_queues" {
                 -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
                 --link zookeeper \
                 confluentinc/cp-kafka:7.5.0
+                
+              # Start RabbitMQ
+              docker run -d --name rabbitmq --restart unless-stopped -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+              
+              # Start Mosquitto
+              cat > mosquitto.conf <<'MQCONF'
+              listener 1883
+              allow_anonymous true
+              listener 9001
+              protocol websockets
+              allow_anonymous true
+              MQCONF
+              docker run -d --name mosquitto --restart unless-stopped -p 1883:1883 -p 9001:9001 -v $(pwd)/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto:2.0
               EOF
 }
