@@ -46,7 +46,7 @@ export default function Denounce() {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const res = await axios.post('http://localhost:3004/graphql', {
+        const res = await axios.post(import.meta.env.VITE_API_FORMS_URL || 'http://localhost:3004/graphql', {
           query: `
             query {
               getAllForms {

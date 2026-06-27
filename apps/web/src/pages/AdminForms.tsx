@@ -17,7 +17,7 @@ export default function AdminForms() {
   const fetchForms = async () => {
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:3004/graphql', {
+      const res = await axios.post(import.meta.env.VITE_API_FORMS_URL || 'http://localhost:3004/graphql', {
         query: `
           query {
             getAllForms {
@@ -69,7 +69,7 @@ export default function AdminForms() {
         return base;
       });
 
-      await axios.post('http://localhost:3004/graphql', {
+      await axios.post(import.meta.env.VITE_API_FORMS_URL || 'http://localhost:3004/graphql', {
         query: `
           mutation SaveForm($categoryId: String!, $title: String!, $schemaDefinition: JSON!) {
             saveForm(categoryId: $categoryId, title: $title, schemaDefinition: $schemaDefinition) {
@@ -100,7 +100,7 @@ export default function AdminForms() {
   const handleDeleteForm = async (categoryId: string) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este formulario por completo?')) return;
     try {
-      await axios.post('http://localhost:3004/graphql', {
+      await axios.post(import.meta.env.VITE_API_FORMS_URL || 'http://localhost:3004/graphql', {
         query: `
           mutation DeleteForm($categoryId: String!) {
             deleteForm(categoryId: $categoryId)

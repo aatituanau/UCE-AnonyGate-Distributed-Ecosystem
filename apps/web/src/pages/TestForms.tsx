@@ -9,7 +9,7 @@ const TestForms: React.FC = () => {
   const fetchForms = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3004/graphql', {
+      const response = await fetch(import.meta.env.VITE_API_FORMS_URL || 'http://localhost:3004/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -37,7 +37,7 @@ const TestForms: React.FC = () => {
   const createForm = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3004/graphql', {
+      const response = await fetch(import.meta.env.VITE_API_FORMS_URL || 'http://localhost:3004/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
