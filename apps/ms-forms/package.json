@@ -1,10 +1,38 @@
 {
-    "private":  true,
-    "name":  "ms-forms",
-    "version":  "1.0.0",
-    "scripts":  {
-                    "build":  "echo \"Building ms-forms\"",
-                    "dev":  "echo \"Running ms-forms\"",
-                    "test":  "echo \"Testing ms-forms\""
-                }
+  "name": "ms-forms",
+  "version": "0.0.1",
+  "description": "Dynamic Forms Service for AnonyGate",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "start": "nest start",
+    "dev": "npm run start:dev",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js"
+  },
+  "dependencies": {
+    "@apollo/server": "^5.0.0",
+    "@nestjs/apollo": "^13.0.0",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/graphql": "^13.0.0",
+    "@nestjs/mongoose": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "graphql": "^16.8.1",
+    "graphql-type-json": "^0.3.2",
+    "mongoose": "^8.3.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.12.4",
+    "typescript": "^5.9.3"
+  }
 }
