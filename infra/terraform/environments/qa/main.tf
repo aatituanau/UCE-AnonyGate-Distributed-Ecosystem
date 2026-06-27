@@ -63,6 +63,12 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
+                  location /graphql {
+                      proxy_pass http://${module.ec2_2_ms_core.private_ip}:3004;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
                   # WebSockets for ms-status real-time updates
                   location /ws/status/ {
                       proxy_pass http://${module.ec2_4_ms_status.private_ip}:3006;
@@ -193,34 +199,33 @@ module "ec2_6_db_postgres" {
 }
 
 # --- EC2-7: PRIVATE SUBNET (MongoDB — shared for MS-03, MS-05, MS-07, MS-10) ---
-# TEMPORARILY DISABLED — enable before deploying MS-03, MS-05, MS-07 or MS-10
 # Databases: DB_Forms (MS-03) | DB_Evidence (MS-05) | DB_AI_Summaries (MS-07)
 #            DB_AuditLog (MS-10) | DB_AuditArchive (MS-10)
-# module "ec2_7_db_mongodb" {
-#   source                      = "../../modules/ec2"
-#   environment                 = var.environment
-#   instance_name               = "ec2-7-db-mongodb"
-#   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_ids[0]
-#   instance_type               = "t2.micro"
-#   associate_public_ip_address = false
-#   allowed_ports               = [22, 27017]
-#   key_name                    = var.key_name
-#   user_data                   = <<-EOF
-#               #!/bin/bash
-#               apt-get update
-#               apt-get install -y docker.io docker-compose
-#               systemctl start docker
-#               systemctl enable docker
-#               mkdir -p /home/ubuntu/mongo_data
-#               docker run -d --name mongodb --restart unless-stopped \
-#                 -v /home/ubuntu/mongo_data:/data/db \
-#                 -e MONGO_INITDB_ROOT_USERNAME=anonygate \
-#                 -e MONGO_INITDB_ROOT_PASSWORD=anonygate_pass \
-#                 -p 27017:27017 \
-#                 mongo:7.0
-#               EOF
-# }
+module "ec2_7_db_mongodb" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-7-db-mongodb"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
+  instance_type               = "t2.micro"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 27017]
+  key_name                    = var.key_name
+  user_data                   = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              mkdir -p /home/ubuntu/mongo_data
+              docker run -d --name mongodb --restart unless-stopped \
+                -v /home/ubuntu/mongo_data:/data/db \
+                -e MONGO_INITDB_ROOT_USERNAME=anonygate \
+                -e MONGO_INITDB_ROOT_PASSWORD=anonygate_pass \
+                -p 27017:27017 \
+                mongo:7.0
+              EOF
+}
 
 # --- EC2-8: PRIVATE SUBNET (Redis + Kafka + RabbitMQ) ---
 module "ec2_8_db_queues" {
