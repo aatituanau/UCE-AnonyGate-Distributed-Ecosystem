@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Login from './pages/Login.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import Denounce from './pages/Denounce.tsx';
+import TestForms from './pages/TestForms.tsx';
 import PublicLayout from './components/PublicLayout.tsx';
 import PrivateLayout from './components/PrivateLayout.tsx';
 import AdminComplaints from './pages/AdminComplaints.tsx';
@@ -41,6 +42,7 @@ function App() {
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<Navigate to="/denounce" replace />} />
           <Route path="denounce" element={<Denounce />} />
+          <Route path="test-forms" element={<TestForms />} />
         </Route>
         
         {/* Private Layout (Dashboard with Sidebar) */}
