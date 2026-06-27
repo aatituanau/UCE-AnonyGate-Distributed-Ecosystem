@@ -26,4 +26,9 @@ export class FormsResolver {
   ): Promise<FormEntity> {
     return this.formsService.createOrUpdateForm(categoryId, title, schemaDefinition);
   }
+
+  @Mutation(() => Boolean)
+  async deleteForm(@Args('categoryId') categoryId: string): Promise<boolean> {
+    return this.formsService.deleteForm(categoryId);
+  }
 }

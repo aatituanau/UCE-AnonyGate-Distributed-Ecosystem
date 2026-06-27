@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 
@@ -33,10 +33,39 @@ export default function Denounce() {
   };
 
   const [formData, setFormData] = useState({ title: '', description: '', faculty: '' });
+  const [dynamicData, setDynamicData] = useState<Record<string, any>>({});
+  const [availableForms, setAvailableForms] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [loading, setLoading] = useState(false);
   const [resultAlias, setResultAlias] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Llama a MS-03 cuando la pantalla carga para traer los esquemas disponibles
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        const res = await axios.post('http://localhost:3004/graphql', {
+          query: `
+            query {
+              getAllForms {
+                id
+                categoryId
+                title
+                schemaDefinition
+              }
+            }
+          `
+        });
+        setAvailableForms(res.data.data.getAllForms || []);
+      } catch (err) {
+        console.error("Error fetching forms from MS-03", err);
+      }
+    };
+    fetchForms();
+  }, []);
+
+  const currentForm = availableForms.find(f => f.categoryId === selectedCategoryId);
 
   interface TrackingStatus {
     alias: string;
@@ -73,7 +102,7 @@ export default function Denounce() {
       const API_SUBMISSION = import.meta.env.VITE_API_SUBMISSION_URL || 'http://localhost:3003';
       await axios.post(`${API_SUBMISSION}/api/v1/complaints`, {
         aliasToken: secretAlias,
-        payload: formData
+        payload: { ...formData, categoryId: selectedCategoryId, dynamicData }
       });
 
       setResultAlias(secretAlias);
@@ -173,15 +202,16 @@ export default function Denounce() {
             </div>
           ) : (
             <form onSubmit={handleDenounce} className="space-y-6">
+              
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Título de la denuncia</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Asunto de la denuncia</label>
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="input-premium"
-                  placeholder="Ej: Irregularidad en notas de matemáticas"
+                  placeholder="Ej: Irregularidad en calificaciones, Abuso de poder..."
                 />
               </div>
 
@@ -197,39 +227,136 @@ export default function Denounce() {
                     onChange={(e) => setFormData({ ...formData, faculty: e.target.value })}
                     className="input-premium pl-11 w-full bg-white appearance-none"
                   >
-                    <option value="" disabled>Seleccione una Facultad...</option>
+                    <option value="" disabled>Seleccione la entidad...</option>
                     <option value="Facultad de Ingeniería">Facultad de Ingeniería</option>
                     <option value="Facultad de Ciencias Médicas">Facultad de Ciencias Médicas</option>
                     <option value="Facultad de Jurisprudencia">Facultad de Jurisprudencia</option>
                     <option value="Facultad de Economía">Facultad de Economía</option>
                     <option value="Facultad de Arquitectura">Facultad de Arquitectura</option>
                     <option value="Facultad de Artes">Facultad de Artes</option>
+                    <option value="Otra Entidad / Departamento">Otra Entidad / Departamento (Ej: TICs, Bienestar)</option>
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Descripción detallada de los hechos</label>
-                <textarea
-                  required
-                  rows={5}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="input-premium resize-none"
-                  placeholder="Describe los hechos con la mayor cantidad de detalles posibles..."
-                ></textarea>
-              </div>
-
-              <button type="submit" disabled={loading} className="btn-primary w-full h-[52px] flex items-center justify-center space-x-2 text-base">
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <span>Enviar Denuncia de Forma Segura</span>
-                    <Send className="w-5 h-5" />
-                  </>
+                {/* Lógica para "Otra Entidad" */}
+                {formData.faculty === 'Otra Entidad / Departamento' && (
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      required
+                      value={dynamicData['faculty_other'] || ''}
+                      onChange={(e) => setDynamicData({ ...dynamicData, faculty_other: e.target.value })}
+                      className="input-premium w-full animate-fade-in"
+                      placeholder="Por favor, especifique la Entidad o Departamento..."
+                    />
+                  </div>
                 )}
-              </button>
+              </div>
+
+              {/* --- INTEGRACIÓN DE FORMULARIOS DINÁMICOS --- */}
+              {availableForms.length > 0 && (
+                <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl mb-6 shadow-sm">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    ¿Qué tipo de irregularidad deseas denunciar?
+                  </label>
+                  <select
+                    required
+                    value={selectedCategoryId}
+                    onChange={(e) => {
+                      setSelectedCategoryId(e.target.value);
+                      setDynamicData({}); // Clear data when category changes
+                    }}
+                    className="input-premium w-full bg-white"
+                  >
+                    <option value="" disabled>Selecciona una categoría...</option>
+                    {availableForms.map((form: any) => (
+                      <option key={form.id} value={form.categoryId}>{form.title}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* RENDERIZADO DINÁMICO DE CAMPOS (Basado en el esquema seleccionado) */}
+              {currentForm && currentForm.schemaDefinition?.fields?.map((field: any) => (
+                <div key={field.name} className="animate-fade-in mb-5">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    {field.label || field.name}
+                  </label>
+                  
+                  {field.type === 'select' && field.options ? (
+                    <div className="space-y-3">
+                      <select
+                        required
+                        value={dynamicData[field.name] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setDynamicData(prev => ({ 
+                            ...prev, 
+                            [field.name]: val,
+                            // Clear 'other' field if they stop selecting 'Otro valor'
+                            [`${field.name}_other`]: val === 'Otro valor' ? prev[`${field.name}_other`] : undefined
+                          }));
+                        }}
+                        className="input-premium w-full bg-white"
+                      >
+                        <option value="" disabled>Seleccione una opción...</option>
+                        {field.options.map((opt: string) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      
+                      {/* Lógica para "Otro valor" */}
+                      {dynamicData[field.name] === 'Otro valor' && (
+                        <input
+                          type="text"
+                          required
+                          value={dynamicData[`${field.name}_other`] || ''}
+                          onChange={(e) => setDynamicData({ ...dynamicData, [`${field.name}_other`]: e.target.value })}
+                          className="input-premium w-full animate-fade-in"
+                          placeholder="Por favor, especifique el valor..."
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type={field.type === 'number' ? 'number' : 'text'}
+                      required
+                      value={dynamicData[field.name] || ''}
+                      onChange={(e) => setDynamicData({ ...dynamicData, [field.name]: e.target.value })}
+                      className="input-premium"
+                      placeholder={`Ej: ${field.label || field.name}`}
+                    />
+                  )}
+                </div>
+              ))}
+              {/* --- FIN INTEGRACIÓN FORMULARIOS DINÁMICOS --- */}
+
+              {/* MUESTRA ESTOS CAMPOS SOLO SI YA SELECCIONÓ LA CATEGORÍA */}
+              {selectedCategoryId && (
+                <div className="space-y-6 animate-fade-in">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Descripción detallada de los hechos</label>
+                    <textarea
+                      required
+                      rows={5}
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="input-premium resize-none"
+                      placeholder="Describe los hechos con la mayor cantidad de detalles posibles..."
+                    ></textarea>
+                  </div>
+
+                  <button type="submit" disabled={loading} className="btn-primary w-full h-[52px] flex items-center justify-center space-x-2 text-base">
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <span>Enviar Denuncia de Forma Segura</span>
+                        <Send className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </form>
           )}
         </div>

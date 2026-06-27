@@ -39,4 +39,9 @@ export class FormsService {
     const newForm = new this.formModel({ categoryId, title, schemaDefinition });
     return newForm.save();
   }
+
+  async deleteForm(categoryId: string): Promise<boolean> {
+    const result = await this.formModel.deleteOne({ categoryId }).exec();
+    return result.deletedCount === 1;
+  }
 }
