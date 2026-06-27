@@ -63,6 +63,7 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
+                  # WebSockets for ms-status real-time updates
                   location /ws/status/ {
                       proxy_pass http://${module.ec2_4_ms_status.private_ip}:3006;
                       proxy_http_version 1.1;
