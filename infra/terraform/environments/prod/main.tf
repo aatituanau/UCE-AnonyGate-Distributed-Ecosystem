@@ -57,8 +57,17 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
-                  location /ws/ {
-                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3009;
+                  location /status/ {
+                      proxy_pass http://${module.ec2_4_ms_status.private_ip}:3006;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
+                  location /ws/status/ {
+                      proxy_pass http://${module.ec2_4_ms_status.private_ip}:3006;
+                      proxy_http_version 1.1;
+                      proxy_set_header Upgrade $${http_upgrade};
+                      proxy_set_header Connection "upgrade";
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
