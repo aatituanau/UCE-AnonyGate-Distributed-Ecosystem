@@ -41,6 +41,7 @@ resource "aws_instance" "this" {
   vpc_security_group_ids      = [aws_security_group.this.id]
   associate_public_ip_address = var.associate_public_ip_address
   user_data                   = var.user_data
+  user_data_replace_on_change = true
   key_name                    = var.key_name != "" ? var.key_name : null
 
   # EBS root volume: data persists after instance termination (critical for demo/presentation)
