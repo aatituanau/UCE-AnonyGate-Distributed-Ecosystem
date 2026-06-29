@@ -54,4 +54,12 @@ export class AuditService {
 
     await newEvent.save();
   }
+
+  async getLogs(): Promise<AuditEvent[]> {
+    return this.auditLogModel.find().sort({ timestamp: -1 }).exec();
+  }
+
+  async getArchives(): Promise<AuditArchive[]> {
+    return this.auditArchiveModel.find().sort({ timestamp: -1 }).exec();
+  }
 }

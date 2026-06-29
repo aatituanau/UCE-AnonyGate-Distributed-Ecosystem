@@ -9,6 +9,7 @@ import PrivateLayout from './components/PrivateLayout.tsx';
 import AdminComplaints from './pages/AdminComplaints.tsx';
 import AdminAnalysts from './pages/AdminAnalysts.tsx';
 import AdminForms from './pages/AdminForms.tsx';
+import AdminAudit from './pages/AdminAudit.tsx';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -59,6 +60,10 @@ function App() {
           <Route
             path="backoffice/forms"
             element={isAdmin ? <AdminForms /> : <Navigate to="/dashboard" replace />}
+          />
+          <Route
+            path="backoffice/audit"
+            element={isAdmin ? <AdminAudit /> : <Navigate to="/dashboard" replace />}
           />
         </Route>
       </Routes>

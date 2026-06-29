@@ -375,6 +375,7 @@ jobs:
               -e VITE_API_ADMIN_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_STATUS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_FORMS_URL="http://${{ secrets.EC2_HOST_NGINX }}/graphql" \
+              -e VITE_API_AUDIT_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               -e MS_PROCESSING_IP="${{ secrets.EC2_HOST_MS_PROCESSING }}" \
               -e MS_STATUS_IP="${{ secrets.EC2_HOST_MS_STATUS }}" \
