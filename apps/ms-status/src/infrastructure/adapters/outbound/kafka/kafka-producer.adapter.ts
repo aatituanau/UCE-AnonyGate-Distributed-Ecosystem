@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
-import { Kafka, Producer } from "kafkajs";
+import { Kafka, Producer, Partitioners } from "kafkajs";
 
 /**
  * Port interface for the Kafka Producer.
@@ -26,7 +26,7 @@ export class KafkaProducerAdapter implements OnModuleInit, OnModuleDestroy, Kafk
     });
     // Create producer with legacy partitioner to avoid kafkajs warning
     this.producer = this.kafka.producer({
-      createPartitioner: require('kafkajs').Partitioners.LegacyPartitioner
+      createPartitioner: Partitioners.LegacyPartitioner
     });
   }
 
