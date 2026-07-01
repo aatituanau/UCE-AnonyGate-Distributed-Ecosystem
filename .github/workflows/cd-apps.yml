@@ -120,7 +120,7 @@ jobs:
             echo "DATABASE_URL_AUTH=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" > .env
             echo "DATABASE_URL_ALIAS=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" >> .env
             echo "DATABASE_URL_SUBMISSION=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" >> .env
-            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017" >> .env
+            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Forms?authSource=admin" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
@@ -305,7 +305,7 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             echo "DATABASE_URL=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=status" > .env
-            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017" >> .env
+            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Audit?authSource=admin" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
