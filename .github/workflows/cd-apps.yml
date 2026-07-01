@@ -358,6 +358,7 @@ jobs:
             fi
 
             echo "=== LOGS DE MS-AUDIT ==="
+            sleep 5
             sudo docker logs ms-audit
 
       - name: Deploy Frontend to Nginx Host
