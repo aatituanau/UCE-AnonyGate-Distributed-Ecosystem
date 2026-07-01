@@ -30,6 +30,14 @@ for file in /usr/share/nginx/html/assets/*.js; do
     if [ ! -z "$VITE_API_STATUS_URL" ]; then
       sed -i "s|http://localhost:3006|${VITE_API_STATUS_URL}|g" "$file"
     fi
+    
+    if [ ! -z "$VITE_API_FORMS_URL" ]; then
+      sed -i "s|http://localhost:3004/graphql|${VITE_API_FORMS_URL}|g" "$file"
+    fi
+    
+    if [ ! -z "$VITE_API_AUDIT_URL" ]; then
+      sed -i "s|http://localhost:3005|${VITE_API_AUDIT_URL}|g" "$file"
+    fi
   fi
 done
 

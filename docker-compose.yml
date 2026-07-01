@@ -54,7 +54,18 @@ services:
       - mosquitto_log:/mosquitto/log
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
 
+  mongodb:
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: anonygate
+      MONGO_INITDB_ROOT_PASSWORD: anonygate_pass
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
 volumes:
   postgres_data:
   mosquitto_data:
   mosquitto_log:
+  mongo_data:

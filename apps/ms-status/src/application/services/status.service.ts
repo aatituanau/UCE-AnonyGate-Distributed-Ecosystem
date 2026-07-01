@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Inject,
 } from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaStatusRepository } from "../../infrastructure/adapters/outbound/prisma/prisma-status.repository";
@@ -13,6 +14,7 @@ import {
   isValidTransition,
   getValidNextStates,
 } from "../../domain/state-machine/status-transitions";
+import { KAFKA_PRODUCER_PORT, type KafkaProducerPort } from "../../infrastructure/adapters/outbound/kafka/kafka-producer.adapter";
 
 /**
  * Core business logic for managing complaint statuses.
@@ -22,6 +24,7 @@ export class StatusService {
   constructor(
     private readonly repository: PrismaStatusRepository,
     private readonly notificationService: NotificationService,
+    @Inject(KAFKA_PRODUCER_PORT) private readonly kafkaProducer: KafkaProducerPort,
   ) {}
 
   /**
@@ -106,6 +109,15 @@ export class StatusService {
     await this.repository.createHistory(history);
 
     const updatedCase = await this.repository.findByComplaintId(complaintId);
+    
+    // Publish domain event to Kafka for Audit Trail and others
+    await this.kafkaProducer.emitStatusUpdated(complaintId, targetStatus, {
+      fromStatus,
+      toStatus: targetStatus,
+      analystId,
+      updatedAt: updatedCase!.updatedAt,
+    });
+
     this.notificationService.notifyStatusUpdate(updatedCase!, fromStatus);
   }
 

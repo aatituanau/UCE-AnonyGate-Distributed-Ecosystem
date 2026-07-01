@@ -18,7 +18,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [ms-auth, ms-alias, ms-submission, ms-admin, ms-status, web]
+        service: [ms-auth, ms-alias, ms-submission, ms-admin, ms-status, ms-forms, web, ms-audit]
     
     steps:
       - uses: actions/checkout@v4
@@ -120,6 +120,7 @@ jobs:
             echo "DATABASE_URL_AUTH=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=public" > .env
             echo "DATABASE_URL_ALIAS=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=alias" >> .env
             echo "DATABASE_URL_SUBMISSION=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=complaints" >> .env
+            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Forms?authSource=admin" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
@@ -135,6 +136,7 @@ jobs:
             # Pull latest images from GHCR
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-forms:latest
 
             # Deploy MS-Auth (Zero Downtime Strategy)
             echo "Starting Replica Test for ms-auth..."
@@ -173,6 +175,21 @@ jobs:
               exit 1
             fi
 
+            # Deploy MS-Forms (Zero Downtime Strategy)
+            echo "Starting Replica Test for ms-forms..."
+            sudo docker run -d --name ms-forms-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-forms:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-forms-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-forms-test
+              sudo docker stop ms-forms || true
+              sudo docker rm ms-forms || true
+              sudo docker run -d --name ms-forms --network anonygate-net -p 3004:3004 --env-file .env --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-forms:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-forms-test
+              exit 1
+            fi
 
             echo "Waiting 5 seconds to see if containers survive..."
             sleep 5
@@ -182,6 +199,9 @@ jobs:
 
             echo "=== LOGS DE MS-ALIAS ==="
             sudo docker logs ms-alias
+            
+            echo "=== LOGS DE MS-FORMS ==="
+            sudo docker logs ms-forms
 
 
 
@@ -285,6 +305,7 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             echo "DATABASE_URL=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=status" > .env
+            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Audit?authSource=admin" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
@@ -296,6 +317,7 @@ jobs:
             sudo docker system prune -af --volumes
             sudo docker network create anonygate-net || true
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-status:latest
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
 
             echo "Starting Replica Test for ms-status..."
             sudo docker run -d --name ms-status-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-status:latest
@@ -318,6 +340,25 @@ jobs:
 
             echo "=== LOGS DE MS-STATUS ==="
             sudo docker logs ms-status
+
+            # Deploy MS-Audit (Zero Downtime Strategy)
+            echo "Starting Replica Test for ms-audit..."
+            sudo docker run -d --name ms-audit-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-audit-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-audit-test
+              sudo docker stop ms-audit || true
+              sudo docker rm ms-audit || true
+              sudo docker run -d --name ms-audit --network anonygate-net -p 3005:3005 --env-file .env --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-audit-test
+              exit 1
+            fi
+
+            echo "=== LOGS DE MS-AUDIT ==="
+            sudo docker logs ms-audit
 
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3
@@ -354,6 +395,8 @@ jobs:
               -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_ADMIN_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_STATUS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
+              -e VITE_API_FORMS_URL="http://${{ secrets.EC2_HOST_NGINX }}/graphql" \
+              -e VITE_API_AUDIT_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               -e MS_PROCESSING_IP="${{ secrets.EC2_HOST_MS_PROCESSING }}" \
               -e MS_STATUS_IP="${{ secrets.EC2_HOST_MS_STATUS }}" \

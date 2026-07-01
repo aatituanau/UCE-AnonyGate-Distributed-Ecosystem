@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, LogOut, LayoutDashboard, Users, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Shield, LogOut, LayoutDashboard, Users, AlertCircle, ChevronLeft, ChevronRight, FileEdit, ShieldCheck } from 'lucide-react';
 
 export default function PrivateLayout() {
   const location = useLocation();
@@ -36,6 +36,8 @@ export default function PrivateLayout() {
   // Admin-only items
   if (isAdmin) {
     menuItems.push({ path: '/backoffice/analysts', label: 'Analistas', icon: <Users className="w-5 h-5" /> });
+    menuItems.push({ path: '/backoffice/forms', label: 'Formularios', icon: <FileEdit className="w-5 h-5" /> });
+    menuItems.push({ path: '/backoffice/audit', label: 'Auditoría', icon: <ShieldCheck className="w-5 h-5" /> });
   }
 
   return (
