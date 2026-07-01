@@ -137,7 +137,6 @@ jobs:
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-auth:latest
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-alias:latest
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-forms:latest
-            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
 
             # Deploy MS-Auth (Zero Downtime Strategy)
             echo "Starting Replica Test for ms-auth..."
@@ -192,22 +191,6 @@ jobs:
               exit 1
             fi
 
-            # Deploy MS-Audit (Zero Downtime Strategy)
-            echo "Starting Replica Test for ms-audit..."
-            sudo docker run -d --name ms-audit-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
-            sleep 10
-            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-audit-test)" == "true" ]; then
-              echo "Replica stable. Replacing old instance..."
-              sudo docker rm -f ms-audit-test
-              sudo docker stop ms-audit || true
-              sudo docker rm ms-audit || true
-              sudo docker run -d --name ms-audit --network anonygate-net -p 3005:3005 --env-file .env --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
-            else
-              echo "Deploy failed. Old instance remains active."
-              sudo docker rm -f ms-audit-test
-              exit 1
-            fi
-
             echo "Waiting 5 seconds to see if containers survive..."
             sleep 5
 
@@ -219,9 +202,6 @@ jobs:
             
             echo "=== LOGS DE MS-FORMS ==="
             sudo docker logs ms-forms
-
-            echo "=== LOGS DE MS-AUDIT ==="
-            sudo docker logs ms-audit
 
 
 
@@ -325,6 +305,7 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             echo "DATABASE_URL=postgresql://anonygate:anonygate_pass@${{ secrets.DB_POSTGRES_IP }}:5432/anonygate_db?schema=status" > .env
+            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "REDIS_HOST=${{ secrets.DB_QUEUES_IP }}" >> .env
             echo "REDIS_PORT=6379" >> .env
@@ -336,6 +317,7 @@ jobs:
             sudo docker system prune -af --volumes
             sudo docker network create anonygate-net || true
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-status:latest
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
 
             echo "Starting Replica Test for ms-status..."
             sudo docker run -d --name ms-status-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-status:latest
@@ -358,6 +340,25 @@ jobs:
 
             echo "=== LOGS DE MS-STATUS ==="
             sudo docker logs ms-status
+
+            # Deploy MS-Audit (Zero Downtime Strategy)
+            echo "Starting Replica Test for ms-audit..."
+            sudo docker run -d --name ms-audit-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-audit-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-audit-test
+              sudo docker stop ms-audit || true
+              sudo docker rm ms-audit || true
+              sudo docker run -d --name ms-audit --network anonygate-net -p 3005:3005 --env-file .env --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-audit:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-audit-test
+              exit 1
+            fi
+
+            echo "=== LOGS DE MS-AUDIT ==="
+            sudo docker logs ms-audit
 
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3
