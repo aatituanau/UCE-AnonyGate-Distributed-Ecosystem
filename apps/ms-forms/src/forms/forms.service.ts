@@ -17,66 +17,73 @@ export class FormsService implements OnModuleInit {
 
   private async seedDefaultForms() {
     try {
-      const count = await this.formModel.countDocuments();
-      if (count === 0) {
-        this.logger.log('No forms found in DB. Seeding 5 default forms for QA prototype...');
-        const defaultForms = [
-          {
-            categoryId: 'acoso',
-            title: 'Denuncia por Acoso',
-            schemaDefinition: { 
-              fields: [
-                { name: 'descripcion', label: 'Descripción de los hechos', type: 'textarea', required: true },
-                { name: 'fecha', label: 'Fecha aproximada', type: 'date', required: false }
-              ] 
-            },
+      this.logger.log('Checking default forms for QA prototype...');
+      const defaultForms = [
+        {
+          categoryId: 'acoso',
+          title: 'Denuncia por Acoso',
+          schemaDefinition: { 
+            fields: [
+              { name: 'descripcion', label: 'Descripción de los hechos', type: 'textarea', required: true },
+              { name: 'fecha', label: 'Fecha aproximada', type: 'date', required: false }
+            ] 
           },
-          {
-            categoryId: 'fraude',
-            title: 'Fraude Académico',
-            schemaDefinition: { 
-              fields: [
-                { name: 'materia', label: 'Materia/Asignatura', type: 'text', required: true },
-                { name: 'descripcion', label: 'Detalles del fraude', type: 'textarea', required: true }
-              ] 
-            },
+        },
+        {
+          categoryId: 'fraude',
+          title: 'Fraude Académico',
+          schemaDefinition: { 
+            fields: [
+              { name: 'materia', label: 'Materia/Asignatura', type: 'text', required: true },
+              { name: 'descripcion', label: 'Detalles del fraude', type: 'textarea', required: true }
+            ] 
           },
-          {
-            categoryId: 'infraestructura',
-            title: 'Daño a Infraestructura',
-            schemaDefinition: { 
-              fields: [
-                { name: 'ubicacion', label: 'Ubicación (Facultad, Aula)', type: 'text', required: true },
-                { name: 'danio', label: 'Descripción del daño', type: 'textarea', required: true }
-              ] 
-            },
+        },
+        {
+          categoryId: 'infraestructura',
+          title: 'Daño a Infraestructura',
+          schemaDefinition: { 
+            fields: [
+              { name: 'ubicacion', label: 'Ubicación (Facultad, Aula)', type: 'text', required: true },
+              { name: 'danio', label: 'Descripción del daño', type: 'textarea', required: true }
+            ] 
           },
-          {
-            categoryId: 'corrupcion',
-            title: 'Corrupción / Soborno',
-            schemaDefinition: { 
-              fields: [
-                { name: 'involucrados', label: 'Personas involucradas (opcional)', type: 'text', required: false },
-                { name: 'detalles', label: 'Detalles de la denuncia', type: 'textarea', required: true }
-              ] 
-            },
+        },
+        {
+          categoryId: 'corrupcion',
+          title: 'Corrupción / Soborno',
+          schemaDefinition: { 
+            fields: [
+              { name: 'involucrados', label: 'Personas involucradas (opcional)', type: 'text', required: false },
+              { name: 'detalles', label: 'Detalles de la denuncia', type: 'textarea', required: true }
+            ] 
           },
-          {
-            categoryId: 'otros',
-            title: 'Otros',
-            schemaDefinition: { 
-              fields: [
-                { name: 'tema', label: 'Tema principal', type: 'text', required: true },
-                { name: 'explicacion', label: 'Explicación detallada', type: 'textarea', required: true }
-              ] 
-            },
-          }
-        ];
-        
-        await this.formModel.insertMany(defaultForms);
-        this.logger.log('Successfully seeded 5 default forms.');
+        },
+        {
+          categoryId: 'otros',
+          title: 'Otros',
+          schemaDefinition: { 
+            fields: [
+              { name: 'tema', label: 'Tema principal', type: 'text', required: true },
+              { name: 'explicacion', label: 'Explicación detallada', type: 'textarea', required: true }
+            ] 
+          },
+        }
+      ];
+      
+      let seededCount = 0;
+      for (const form of defaultForms) {
+        const existing = await this.formModel.findOne({ categoryId: form.categoryId });
+        if (!existing) {
+          await this.formModel.create(form);
+          seededCount++;
+        }
+      }
+
+      if (seededCount > 0) {
+        this.logger.log(`Successfully seeded ${seededCount} missing default forms.`);
       } else {
-        this.logger.log(`Found ${count} existing forms. Skipping seed.`);
+        this.logger.log('All default forms already exist. Skipping seed.');
       }
     } catch (error) {
       this.logger.error('Error during form seeding', error);
