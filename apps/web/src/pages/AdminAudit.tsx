@@ -77,10 +77,10 @@ export default function AdminAudit() {
 
   const extractAlias = (payload: any) => {
     if (!payload) return null;
-    
+
     // Attempt to find the aliasToken directly
     let token = payload.aliasToken || payload.data?.aliasToken || payload.complaint?.aliasToken;
-    
+
     // If not found, try to look it up using the ID
     const complaintId = payload.complaintId || payload.data?.id || payload.id;
     if (!token && complaintId && aliasMap.has(complaintId)) {
@@ -129,7 +129,7 @@ export default function AdminAudit() {
   const getActionDetails = (item: AuditEvent) => {
     const p = item.payload;
     if (!p) return null;
-    
+
     if (item.eventType === 'complaint.status.updated') {
       const translateStatus = (s: string) => {
         switch (s?.toUpperCase()) {
@@ -143,17 +143,17 @@ export default function AdminAudit() {
           default: return s;
         }
       };
-      
+
       const fromStatusStr = p.payload?.fromStatus || p.fromStatus;
       const toStatusStr = p.payload?.toStatus || p.toStatus || p.status;
       const analystIdStr = p.payload?.analystId || p.analystId;
 
       const from = translateStatus(fromStatusStr) || '?';
       const to = translateStatus(toStatusStr) || '?';
-      
+
       return `${from} ➔ ${to}`;
     }
-    
+
     if (item.eventType === 'ai.analysis.completed') {
       const urgency = p.urgencyLevel || p.analysis?.urgencyLevel || '?';
       return `Urgencia: ${urgency}`;
@@ -169,7 +169,7 @@ export default function AdminAudit() {
   const getResponsible = (item: AuditEvent) => {
     const p = item.payload;
     if (!p) return 'Sistema';
-    
+
     const analystIdStr = p.payload?.analystId || p.analystId;
     if (analystIdStr) {
       const analystName = analystsMap[analystIdStr] || analystIdStr.split('-')[0];
@@ -215,22 +215,20 @@ export default function AdminAudit() {
         <div className="flex border-b border-slate-200">
           <button
             onClick={() => setActiveTab('logs')}
-            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 text-sm font-medium transition-colors ${
-              activeTab === 'logs'
+            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 text-sm font-medium transition-colors ${activeTab === 'logs'
                 ? 'bg-indigo-50/50 text-indigo-700 border-b-2 border-indigo-600'
                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <Database className="w-4 h-4" />
             Eventos Activos (AuditLog)
           </button>
           <button
             onClick={() => setActiveTab('archives')}
-            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 text-sm font-medium transition-colors ${
-              activeTab === 'archives'
+            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 text-sm font-medium transition-colors ${activeTab === 'archives'
                 ? 'bg-indigo-50/50 text-indigo-700 border-b-2 border-indigo-600'
                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <Archive className="w-4 h-4" />
             Casos Cerrados (AuditArchive)
