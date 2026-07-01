@@ -146,7 +146,6 @@ export default function AdminAudit() {
 
       const fromStatusStr = p.payload?.fromStatus || p.fromStatus;
       const toStatusStr = p.payload?.toStatus || p.toStatus || p.status;
-      const analystIdStr = p.payload?.analystId || p.analystId;
 
       const from = translateStatus(fromStatusStr) || '?';
       const to = translateStatus(toStatusStr) || '?';
