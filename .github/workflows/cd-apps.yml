@@ -95,6 +95,25 @@ jobs:
             # Kafka
             PRIVATE_IP=$(hostname -I | awk '{print $1}')
             sudo docker start kafka || sudo docker run -d --name kafka --restart unless-stopped -p 9092:9092 -e KAFKA_BROKER_ID=1 -e KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://$PRIVATE_IP:9092 -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 --link zookeeper confluentinc/cp-kafka:7.5.0
+      - name: Start MongoDB Database
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DB_MONGO_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.EC2_HOST_NGINX }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Install Docker if not present
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
+            fi
+            
+            # Start existing container, or create it if it doesn't exist yet
+            sudo docker start mongodb || sudo docker run -d --name mongodb --restart unless-stopped -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=anonygate -e MONGO_INITDB_ROOT_PASSWORD=anonygate_pass mongo:7
+
       - name: Deploy Microservices via Bastion
         uses: appleboy/ssh-action@v1.0.3
         with:
