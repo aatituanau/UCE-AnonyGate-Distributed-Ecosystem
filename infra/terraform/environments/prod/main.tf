@@ -57,6 +57,12 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
+                  location /audit/ {
+                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3005/;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
                   location /status/ {
                       proxy_pass http://${module.ec2_4_ms_status.private_ip}:3006;
                       proxy_set_header Host $${host};

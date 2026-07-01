@@ -43,3 +43,16 @@ statusApi.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Instance for MS-Audit (requires JWT for Admin)
+export const auditApi = axios.create({
+  baseURL: import.meta.env.VITE_API_AUDIT_URL || 'http://localhost:3005',
+});
+
+auditApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});

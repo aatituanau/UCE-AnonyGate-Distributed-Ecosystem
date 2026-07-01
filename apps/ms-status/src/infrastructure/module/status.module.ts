@@ -16,6 +16,7 @@ import { PrismaService } from "../adapters/outbound/prisma/prisma.service";
 import { PrismaStatusRepository } from "../adapters/outbound/prisma/prisma-status.repository";
 import { RedisSessionService } from "../adapters/outbound/redis/redis-session.service";
 import { MqttAlertService } from "../adapters/outbound/mqtt/mqtt-alert.service";
+import { KafkaProducerAdapter, KAFKA_PRODUCER_PORT } from "../adapters/outbound/kafka/kafka-producer.adapter";
 
 // Common
 import { JwtStrategy } from "../../common/strategies/jwt.strategy";
@@ -49,6 +50,10 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
     PrismaStatusRepository,
     RedisSessionService,
     MqttAlertService,
+    {
+      provide: KAFKA_PRODUCER_PORT,
+      useClass: KafkaProducerAdapter,
+    },
 
     // Common (Guards/Strategies)
     JwtStrategy,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { adminApi, statusApi } from '../services/api';
 import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
@@ -209,32 +210,47 @@ export default function AdminComplaints() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
-                    <th className="p-4 font-semibold whitespace-nowrap">ID</th>
-                    <th className="p-4 font-semibold whitespace-nowrap">Alias Token</th>
-                    <th className="p-4 font-semibold whitespace-nowrap">Estado</th>
-                    <th className="p-4 font-semibold whitespace-nowrap">Fecha de Creación</th>
-                    <th className="p-4 font-semibold text-right whitespace-nowrap">Acciones</th>
+                    <th className="px-6 py-4 font-semibold">Caso & Identificador</th>
+                    <th className="px-6 py-4 font-semibold">Estado Actual</th>
+                    <th className="px-6 py-4 font-semibold">Fecha de Recepción</th>
+                    <th className="px-6 py-4 font-semibold text-right">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredComplaints.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-mono text-xs text-slate-500 whitespace-nowrap">{c.id.slice(0, 8)}...</td>
-                      <td className="p-4 font-mono font-medium text-slate-800 whitespace-nowrap">{c.aliasToken}</td>
-                      <td className="p-4 whitespace-nowrap">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(c.status)}`}>
+                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors group cursor-pointer" onClick={() => openModal(c)}>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-[13px] font-bold text-slate-900 tracking-tight">
+                            {c.aliasToken}
+                          </span>
+                          <span className="font-mono text-[10px] text-slate-400">
+                            ID: {c.id.slice(0, 12)}...
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${getStatusColor(c.status)}`}>
                           {statusLabels[c.status] || c.status}
                         </span>
                       </td>
-                      <td className="p-4 text-sm text-slate-600 whitespace-nowrap">
-                        {new Date(c.createdAt).toLocaleString()}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-slate-700">
+                            {new Date(c.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {new Date(c.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
                       </td>
-                      <td className="p-4 text-right whitespace-nowrap">
+                      <td className="px-6 py-4 text-right">
                         <button 
-                          onClick={() => openModal(c)}
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          onClick={(e) => { e.stopPropagation(); openModal(c); }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-transparent hover:border-blue-200"
                         >
-                          <Eye className="w-5 h-5" />
+                          <Eye className="w-4 h-4" />
+                          Gestionar
                         </button>
                       </td>
                     </tr>
@@ -247,8 +263,8 @@ export default function AdminComplaints() {
       </div>
 
       {/* Modal for viewing and changing status */}
-      {selectedComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+      {selectedComplaint && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="text-lg font-bold text-slate-800">Detalles del Caso</h3>
@@ -327,7 +343,8 @@ export default function AdminComplaints() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
