@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { auditApi, adminApi } from '../services/api';
 import { ShieldCheck, History, Search, RefreshCw, Key, Database, Archive, User } from 'lucide-react';
 
@@ -6,6 +6,7 @@ interface AuditEvent {
   _id: string;
   eventId: string;
   eventType: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: any;
   previousHash: string;
   hash: string;
@@ -22,7 +23,7 @@ export default function AdminAudit() {
   const [analystsMap, setAnalystsMap] = useState<Record<string, string>>({});
   const [lastSync, setLastSync] = useState<Date>(new Date());
 
-  const fetchAuditData = async () => {
+  const fetchAuditData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -38,7 +39,7 @@ export default function AdminAudit() {
       try {
         const analystsRes = await adminApi.get('/admin/analysts');
         const map: Record<string, string> = {};
-        analystsRes.data?.forEach((a: any) => {
+        analystsRes.data?.forEach((a: { id: string; email: string }) => {
           map[a.id] = a.email.split('@')[0]; // Just the username part
         });
         setAnalystsMap(map);
@@ -52,11 +53,12 @@ export default function AdminAudit() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
-    fetchAuditData();
-  }, [activeTab]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchAuditData();
+  }, [fetchAuditData]);
 
   const currentData = activeTab === 'logs' ? logs : archives;
   const filteredData = currentData.filter(
@@ -75,6 +77,7 @@ export default function AdminAudit() {
     }
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const extractAlias = (payload: any) => {
     if (!payload) return null;
 
