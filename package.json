@@ -1,6 +1,6 @@
 {
   "name": "anonygate-distributed-ecosystem",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "private": true,
   "packageManager": "npm@10.0.0",
   "workspaces": [
