@@ -9,7 +9,7 @@ export class KafkaConsumerAdapter implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly auditService: AuditService) {
     const kafka = new Kafka({
       clientId: 'ms-audit-client',
-      brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
+      brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
     });
 
     this.consumer = kafka.consumer({ groupId: 'audit-group' });
