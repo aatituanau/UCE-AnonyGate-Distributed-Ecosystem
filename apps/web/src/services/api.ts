@@ -56,3 +56,16 @@ auditApi.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Instance for MS-Submission (requires JWT for Analysts)
+export const submissionApi = axios.create({
+  baseURL: import.meta.env.VITE_API_SUBMISSION_URL || 'http://localhost:3003',
+});
+
+submissionApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});

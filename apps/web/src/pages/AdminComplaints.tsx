@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { adminApi, statusApi } from '../services/api';
+import { adminApi, statusApi, submissionApi } from '../services/api';
 import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -74,13 +74,12 @@ export default function AdminComplaints() {
     setLoading(true);
     setError('');
     try {
-      const res = await adminApi.get('/admin/complaints');
-      // res.data contains { data: [...], meta: {...} } from the CQRS handler
-      setComplaints(res.data.data || []);
+      const res = await submissionApi.get('/api/v1/complaints/analyst');
+      setComplaints(res.data || []);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status === 404) {
-        setError('El endpoint /admin/complaints aún no está implementado en el backend ms-admin.');
+        setError('El endpoint de ms-submission no está disponible.');
       } else {
         setError(err.response?.data?.message || 'Error al cargar las denuncias.');
       }
@@ -277,8 +276,22 @@ export default function AdminComplaints() {
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase block mb-1">ID y Alias</span>
                 <div className="font-mono text-sm text-slate-700">{selectedComplaint.id}</div>
-                <div className="font-mono font-bold text-blue-600">{selectedComplaint.aliasToken}</div>
+                <div className="font-mono font-bold text-blue-600">{selectedComplaint.aliasToken?.slice(0, 10)}***</div>
               </div>
+
+              {selectedComplaint.payload && (
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase block mb-2">Contenido de la Denuncia (Payload)</span>
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                    {Object.entries(selectedComplaint.payload).map(([key, value]) => (
+                      <div key={key} className="mb-3 last:mb-0">
+                        <span className="text-xs font-bold text-slate-500 uppercase block">{key.replace(/_/g, ' ')}</span>
+                        <p className="text-sm text-slate-800 whitespace-pre-wrap">{String(value)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Actualizar Estado</span>
