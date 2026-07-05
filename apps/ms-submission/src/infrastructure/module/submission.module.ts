@@ -3,6 +3,8 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { ComplaintController } from '../adapters/inbound/http/complaint.controller';
 import { CreateComplaintHandler } from '../../application/commands/create-complaint/create-complaint.handler';
 import { GetComplaintHandler } from '../../application/queries/get-complaint/get-complaint.handler';
+import { GetComplaintByIdHandler } from '../../application/queries/get-complaint-by-id/get-complaint-by-id.handler';
+import { GetAllComplaintsHandler } from '../../application/queries/get-all-complaints/get-all-complaints.handler';
 import { COMPLAINT_REPOSITORY } from '../../domain/ports/outbound/complaint.repository.port';
 import { PrismaComplaintRepository } from '../adapters/outbound/prisma/prisma-complaint.repository';
 import { PrismaService } from '../adapters/outbound/prisma/prisma.service';
@@ -17,6 +19,8 @@ import { GrpcAliasAdapter } from '../adapters/outbound/grpc/grpc-alias.adapter';
   providers: [
     CreateComplaintHandler,
     GetComplaintHandler,
+    GetComplaintByIdHandler,
+    GetAllComplaintsHandler,
     PrismaService,
     { provide: COMPLAINT_REPOSITORY, useClass: PrismaComplaintRepository },
     { provide: EVENT_BUS_PORT, useClass: KafkaEventBusAdapter },
