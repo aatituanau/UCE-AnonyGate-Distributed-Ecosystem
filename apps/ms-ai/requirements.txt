@@ -1,2 +1,8 @@
 fastapi
 uvicorn
+aio-pika
+aiokafka
+motor
+httpx
+pydantic
+pydantic-settings
