@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { adminApi, statusApi, submissionApi } from '../services/api';
+import { statusApi, submissionApi } from '../services/api';
 import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
 
