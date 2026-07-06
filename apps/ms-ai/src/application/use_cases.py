@@ -38,6 +38,7 @@ class AnalyzeComplaintUseCase:
         # 3. Crear entidad del resultado
         result = AIAnalysisResult(
             id=str(uuid.uuid4()),
+            complaintId=complaint_id,
             aliasToken=alias_token,
             summary=summary,
             urgency=urgency,

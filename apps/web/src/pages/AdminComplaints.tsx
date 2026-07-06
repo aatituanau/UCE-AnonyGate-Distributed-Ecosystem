@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { statusApi, submissionApi } from '../services/api';
-import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle } from 'lucide-react';
+import { statusApi, submissionApi, aiApi } from '../services/api';
+import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle, Zap } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 export default function AdminComplaints() {
@@ -70,6 +70,10 @@ export default function AdminComplaints() {
   const [statusUpdateError, setStatusUpdateError] = useState('');
   const [statusUpdateSuccess, setStatusUpdateSuccess] = useState('');
 
+  // AI Insights State
+  const [aiInsights, setAiInsights] = useState<any>(null);
+  const [loadingInsights, setLoadingInsights] = useState(false);
+
   const fetchComplaints = async () => {
     setLoading(true);
     setError('');
@@ -130,11 +134,23 @@ export default function AdminComplaints() {
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const openModal = (complaint: any) => {
+  const openModal = async (complaint: any) => {
     setSelectedComplaint(complaint);
     setNewStatus(complaint.status);
     setStatusUpdateError('');
     setStatusUpdateSuccess('');
+    
+    // Fetch AI Insights
+    setAiInsights(null);
+    setLoadingInsights(true);
+    try {
+      const res = await aiApi.get(`/api/insights/${complaint.id}`);
+      setAiInsights(res.data);
+    } catch (err) {
+      console.log("No AI insights yet or error fetching:", err);
+    } finally {
+      setLoadingInsights(false);
+    }
   };
 
   const handleUpdateStatus = async () => {
@@ -277,6 +293,55 @@ export default function AdminComplaints() {
                 <span className="text-xs font-bold text-slate-400 uppercase block mb-1">ID y Alias</span>
                 <div className="font-mono text-sm text-slate-700">{selectedComplaint.id}</div>
                 <div className="font-mono font-bold text-blue-600">{selectedComplaint.aliasToken?.slice(0, 10)}***</div>
+              </div>
+
+              {/* AI Insights Card */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100 shadow-sm relative overflow-hidden">
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="bg-blue-600 p-1.5 rounded-lg text-white shadow-sm">
+                    <Zap className="w-4 h-4" />
+                  </span>
+                  <h4 className="font-bold text-blue-900">AI Insights</h4>
+                  {loadingInsights && <RefreshCw className="w-4 h-4 animate-spin text-blue-400 ml-2" />}
+                </div>
+
+                {loadingInsights ? (
+                  <p className="text-sm text-blue-600/60 animate-pulse font-medium">Analizando caso con IA...</p>
+                ) : aiInsights ? (
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-xs font-semibold text-blue-800/60 uppercase tracking-wider mb-1 block">Nivel de Urgencia Detectado</span>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border shadow-sm ${
+                        aiInsights.urgency === 'CRITICAL' ? 'bg-red-100 text-red-700 border-red-200' :
+                        aiInsights.urgency === 'HIGH' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                        aiInsights.urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                        'bg-blue-100 text-blue-700 border-blue-200'
+                      }`}>
+                        {aiInsights.urgency}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-blue-800/60 uppercase tracking-wider mb-1 block">Resumen Generado</span>
+                      <p className="text-sm text-blue-900 leading-relaxed font-medium bg-white/70 p-3 rounded-lg border border-blue-100/50 shadow-inner">
+                        "{aiInsights.summary}"
+                      </p>
+                    </div>
+                    {aiInsights.keywords && aiInsights.keywords.length > 0 && (
+                      <div>
+                        <span className="text-xs font-semibold text-blue-800/60 uppercase tracking-wider mb-2 block">Palabras Clave (Keywords)</span>
+                        <div className="flex flex-wrap gap-2">
+                          {aiInsights.keywords.map((kw: string, i: number) => (
+                            <span key={i} className="px-2.5 py-1 bg-white border border-blue-200 text-blue-700 text-[11px] font-bold rounded-full shadow-sm hover:shadow-md transition-shadow">
+                              #{kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-blue-700/60">Análisis de IA pendiente o no disponible para este caso.</p>
+                )}
               </div>
 
               {selectedComplaint.payload && (

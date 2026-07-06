@@ -8,6 +8,7 @@ class AIAnalysisResult(BaseModel):
     No contiene lógica de persistencia, solo la estructura de datos.
     """
     id: str
+    complaintId: str
     aliasToken: str
     summary: str
     urgency: str

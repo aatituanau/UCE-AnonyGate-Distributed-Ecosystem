@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from src.infrastructure.config.settings import settings
 from src.infrastructure.adapters.hf_inference_adapter import HuggingFaceInferenceAdapter
 from src.infrastructure.adapters.mongo_repository_adapter import MongoAIAnalysisRepositoryAdapter
@@ -67,7 +68,28 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Habilitar CORS para el frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # En PROD debería limitarse al dominio del front
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/health")
 async def health_check():
     """Endpoint de salud para el Load Balancer o Docker/K8s."""
     return {"status": "ok", "service": "ms-ai"}
+
+@app.get("/api/insights/{complaint_id}")
+async def get_insights(complaint_id: str):
+    """Obtiene el resultado del análisis de IA por complaintId."""
+    if not mongo_adapter:
+        raise HTTPException(status_code=500, detail="Database connection not ready")
+        
+    result = await mongo_adapter.find_by_complaint_id(complaint_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Insights not found for this complaint")
+        
+    return result

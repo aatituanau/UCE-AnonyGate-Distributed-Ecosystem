@@ -23,6 +23,15 @@ class MongoAIAnalysisRepositoryAdapter(AIAnalysisRepositoryPort):
             
         await self.collection.insert_one(doc)
 
+    async def find_by_complaint_id(self, complaint_id: str) -> AIAnalysisResult | None:
+        doc = await self.collection.find_one({"complaintId": complaint_id})
+        if not doc:
+            return None
+            
+        # Revertimos _id a id para instanciar la entidad
+        doc["id"] = doc.pop("_id")
+        return AIAnalysisResult(**doc)
+
     def close(self):
         """Cierra la conexión a MongoDB."""
         self.client.close()

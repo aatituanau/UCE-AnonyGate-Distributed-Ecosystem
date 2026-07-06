@@ -84,6 +84,12 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
+                  location /ai/ {
+                      proxy_pass http://${module.ec2_5_ms_specialized.private_ip}:3007/;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
                   # Future routes for forms, submission, etc will be added here
               }
               NGINXCONF
@@ -162,25 +168,24 @@ module "ec2_4_ms_status" {
 }
 
 # --- EC2-5: PRIVATE SUBNET (ms-sanitization, ms-ai) ---
-# TEMPORARILY DISABLED FOR RAPID TESTING
-# module "ec2_5_ms_specialized" {
-#   source                      = "../../modules/ec2"
-#   environment                 = var.environment
-#   instance_name               = "ec2-5-ms-specialized"
-#   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_ids[0]
-#   instance_type               = "t2.micro"
-#   associate_public_ip_address = false
-#   allowed_ports               = [22, 3008, 3009] # Using arbitrary ports for n8n/Python
-#   key_name                    = var.key_name
-#   user_data = <<-EOF
-#               #!/bin/bash
-#               apt-get update
-#               apt-get install -y docker.io docker-compose
-#               systemctl start docker
-#               systemctl enable docker
-#               EOF
-# }
+module "ec2_5_ms_specialized" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-5-ms-specialized"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
+  instance_type               = "t3.medium"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3007, 3008, 3009]
+  key_name                    = var.key_name
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
 
 # --- EC2-6: PRIVATE SUBNET (PostgreSQL) ---
 module "ec2_6_db_postgres" {

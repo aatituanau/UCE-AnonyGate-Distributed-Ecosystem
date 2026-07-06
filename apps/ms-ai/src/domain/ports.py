@@ -17,6 +17,10 @@ class AIAnalysisRepositoryPort(ABC):
     @abstractmethod
     async def save(self, result: AIAnalysisResult) -> None:
         pass
+        
+    @abstractmethod
+    async def find_by_complaint_id(self, complaint_id: str) -> AIAnalysisResult | None:
+        pass
 
 class AnalysisResultProducerPort(ABC):
     """
