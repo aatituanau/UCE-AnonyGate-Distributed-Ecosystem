@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field
+from typing import Optional
 
 class Settings(BaseSettings):
     """
@@ -15,7 +17,7 @@ class Settings(BaseSettings):
     mongo_uri: str
     
     # HuggingFace
-    hf_api_token: str
+    hf_api_token: Optional[str] = Field(default="", alias="HUGGINGFACE_API_KEY")
     
     class Config:
         env_file = ".env"
