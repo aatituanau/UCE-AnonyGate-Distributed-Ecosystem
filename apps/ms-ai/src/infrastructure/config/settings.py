@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     """
-    Carga y valida las variables de entorno para la infraestructura.
+    Loads and validates environment variables for infrastructure.
     """
     # FastAPI
     port: int = 3007
@@ -21,5 +21,5 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-# Instancia global de settings
+# Global settings instance
 settings = Settings()

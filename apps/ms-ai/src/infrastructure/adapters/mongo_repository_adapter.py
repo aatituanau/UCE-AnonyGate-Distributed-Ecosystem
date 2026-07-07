@@ -4,7 +4,7 @@ from src.domain.ports import AIAnalysisRepositoryPort
 
 class MongoAIAnalysisRepositoryAdapter(AIAnalysisRepositoryPort):
     """
-    Adaptador de MongoDB para guardar los resultados del análisis.
+    MongoDB Adapter to save the analysis results.
     """
     def __init__(self, mongo_uri: str, db_name: str = "DB_AI_Summaries"):
         self.client = AsyncIOMotorClient(mongo_uri)
@@ -12,12 +12,12 @@ class MongoAIAnalysisRepositoryAdapter(AIAnalysisRepositoryPort):
         self.collection = self.db["summaries"]
 
     async def save(self, result: AIAnalysisResult) -> None:
-        # Convertimos la entidad de dominio a diccionario para guardarla en BD
-        # model_dump() es el estándar en pydantic v2 (dict() en v1)
+        # Convert the domain entity to dictionary to save it in DB
+        # model_dump() is standard in pydantic v2 (dict() in v1)
         doc = result.model_dump()
         
-        # En MongoDB, solemos reemplazar 'id' por '_id', pero podemos guardar 'id' también.
-        # Guardaremos '_id' para usarlo como primary key de Mongo
+        # In MongoDB, we usually replace 'id' with '_id'
+        # We will save '_id' to use it as Mongo's primary key
         if "id" in doc:
             doc["_id"] = doc.pop("id")
             
@@ -28,10 +28,10 @@ class MongoAIAnalysisRepositoryAdapter(AIAnalysisRepositoryPort):
         if not doc:
             return None
             
-        # Revertimos _id a id para instanciar la entidad
+        # Revert _id to id to instantiate the entity
         doc["id"] = doc.pop("_id")
         return AIAnalysisResult(**doc)
 
     def close(self):
-        """Cierra la conexión a MongoDB."""
+        """Closes the MongoDB connection."""
         self.client.close()

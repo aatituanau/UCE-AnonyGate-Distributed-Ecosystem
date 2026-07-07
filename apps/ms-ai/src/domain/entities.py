@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 
 class AIAnalysisResult(BaseModel):
     """
-    Entidad pura del dominio que representa el resultado del análisis de IA.
-    No contiene lógica de persistencia, solo la estructura de datos.
+    Pure domain entity that represents the AI analysis result.
+    Does not contain persistence logic, only the data structure.
     """
     id: str
     complaintId: str
@@ -16,6 +16,6 @@ class AIAnalysisResult(BaseModel):
     createdAt: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        # Pydantic nos ayuda con la validación de tipos, 
-        # pero mantenemos esto aislado de la infraestructura (MongoDB, APIs)
+        # Pydantic helps us with type validation,
+        # but we keep this isolated from infrastructure (MongoDB, APIs)
         pass

@@ -4,7 +4,7 @@ from .entities import AIAnalysisResult
 
 class NLPInferencePort(ABC):
     """
-    Puerto (interfaz) para llamar al modelo NLP (HuggingFace).
+    Port (interface) to call the NLP model (HuggingFace).
     """
     @abstractmethod
     async def summarize_text(self, text: str) -> str:
@@ -12,7 +12,7 @@ class NLPInferencePort(ABC):
 
 class AIAnalysisRepositoryPort(ABC):
     """
-    Puerto (interfaz) para guardar el resultado del análisis en BD.
+    Port (interface) to save the analysis result in DB.
     """
     @abstractmethod
     async def save(self, result: AIAnalysisResult) -> None:
@@ -24,7 +24,7 @@ class AIAnalysisRepositoryPort(ABC):
 
 class AnalysisResultProducerPort(ABC):
     """
-    Puerto (interfaz) para emitir el evento a RabbitMQ (hacia MS-08).
+    Port (interface) to emit the event to RabbitMQ (towards MS-08).
     """
     @abstractmethod
     async def publish_result(self, result: AIAnalysisResult) -> None:
@@ -32,7 +32,7 @@ class AnalysisResultProducerPort(ABC):
 
 class AuditProducerPort(ABC):
     """
-    Puerto (interfaz) para emitir evento a Kafka (hacia MS-10 Audit).
+    Port (interface) to emit event to Kafka (towards MS-10 Audit).
     """
     @abstractmethod
     async def publish_audit_event(self, event_type: str, payload: Dict[str, Any]) -> None:

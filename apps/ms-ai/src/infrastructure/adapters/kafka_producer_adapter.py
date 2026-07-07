@@ -6,7 +6,8 @@ from src.domain.ports import AuditProducerPort
 
 class KafkaProducerAdapter(AuditProducerPort):
     """
-    Adaptador para publicar eventos de auditoría en Kafka (hacia MS-10).
+    Adapter to publish audit events to Kafka.
+    Follows EDA rules for domain events.
     """
     def __init__(self, bootstrap_servers: str):
         self.bootstrap_servers = bootstrap_servers
@@ -26,8 +27,8 @@ class KafkaProducerAdapter(AuditProducerPort):
         if not self.producer:
             await self.connect()
             
-        # Para cumplir el standard de 'dominio.accion'
-        # El event_type viene como 'ai.analysis.completed'
+        # To comply with 'domain.action' standard
+        # The event_type comes as 'ai.analysis.completed'
         await self.producer.send_and_wait(event_type, payload)
 
     async def stop(self):

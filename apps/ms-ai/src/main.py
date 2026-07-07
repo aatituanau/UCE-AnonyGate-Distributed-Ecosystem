@@ -9,7 +9,7 @@ from src.infrastructure.adapters.kafka_producer_adapter import KafkaProducerAdap
 from src.infrastructure.messaging.rabbitmq_consumer import RabbitMQConsumer
 from src.application.use_cases import AnalyzeComplaintUseCase
 
-# Variables globales para manejar las conexiones en el lifespan
+# Global variables to handle connections in the lifespan
 mongo_adapter = None
 rabbitmq_producer = None
 kafka_producer = None
@@ -21,17 +21,17 @@ async def lifespan(app: FastAPI):
     
     print("[*] Iniciando MS-07 AI Insight Service...")
     
-    # 1. Inicializar adaptadores
+    # 1. Initialize adapters
     hf_adapter = HuggingFaceInferenceAdapter(api_token=settings.hf_api_token)
     mongo_adapter = MongoAIAnalysisRepositoryAdapter(mongo_uri=settings.mongo_uri)
     rabbitmq_producer = RabbitMQProducerAdapter(rabbitmq_url=settings.rabbitmq_url)
     kafka_producer = KafkaProducerAdapter(bootstrap_servers=settings.kafka_broker)
     
-    # 2. Conectar Producers
+    # 2. Connect Producers
     await rabbitmq_producer.connect()
     await kafka_producer.connect()
     
-    # 3. Inicializar Caso de Uso (Inyección de Dependencias)
+    # 3. Initialize Use Case (Dependency Injection)
     use_case = AnalyzeComplaintUseCase(
         nlp_port=hf_adapter,
         repository_port=mongo_adapter,
@@ -39,17 +39,17 @@ async def lifespan(app: FastAPI):
         audit_producer_port=kafka_producer
     )
     
-    # 4. Inicializar y arrancar el Consumer
+    # 4. Initialize and start Consumer
     rabbitmq_consumer = RabbitMQConsumer(
         rabbitmq_url=settings.rabbitmq_url,
         use_case=use_case
     )
     await rabbitmq_consumer.start_consuming()
     
-    yield # Aquí FastAPI está corriendo y atendiendo peticiones
+    yield # Here FastAPI is running and serving requests
     
     print("[*] Apagando MS-07 AI Insight Service...")
-    # Limpiar recursos
+    # Cleanup resources
     if rabbitmq_consumer:
         await rabbitmq_consumer.stop()
     if rabbitmq_producer:
@@ -60,18 +60,18 @@ async def lifespan(app: FastAPI):
         mongo_adapter.close()
 
 
-# Inicializamos la app de FastAPI
+# Initialize FastAPI app
 app = FastAPI(
     title="MS-07 AI Insight Service",
-    description="Microservicio de procesamiento de lenguaje natural y clasificación de urgencia.",
+    description="Natural Language Processing and Urgency Classification microservice.",
     version="1.0.0",
     lifespan=lifespan
 )
 
-# Habilitar CORS para el frontend
+# Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # En PROD debería limitarse al dominio del front
+    allow_origins=["*"], # In PROD this should be limited to frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,17 +79,18 @@ app.add_middleware(
 
 @app.get("/health")
 async def health_check():
-    """Endpoint de salud para el Load Balancer o Docker/K8s."""
+    """Health endpoint for Load Balancer or Docker/K8s."""
     return {"status": "ok", "service": "ms-ai"}
 
 @app.get("/api/insights/{complaint_id}")
 async def get_insights(complaint_id: str):
-    """Obtiene el resultado del análisis de IA por complaintId."""
+    """Gets the AI analysis result by complaintId."""
     if not mongo_adapter:
         raise HTTPException(status_code=500, detail="Database connection not ready")
         
     result = await mongo_adapter.find_by_complaint_id(complaint_id)
     if not result:
-        raise HTTPException(status_code=404, detail="Insights not found for this complaint")
+        # Return 200 OK with null instead of 404 to prevent frontend console errors for pending complaints
+        return None
         
     return result
