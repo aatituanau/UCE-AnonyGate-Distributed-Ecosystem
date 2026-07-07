@@ -82,3 +82,16 @@ aiApi.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Instance for MS-Evidence (requires JWT for Analysts)
+export const evidenceApi = axios.create({
+  baseURL: import.meta.env.VITE_API_EVIDENCE_URL || 'http://localhost:3008',
+});
+
+evidenceApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});

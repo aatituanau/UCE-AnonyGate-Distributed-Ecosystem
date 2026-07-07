@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { statusApi, submissionApi, aiApi } from '../services/api';
-import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle, Zap } from 'lucide-react';
+import { statusApi, submissionApi, aiApi, evidenceApi } from '../services/api';
+import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle, Zap, ShieldAlert, ShieldCheck, Download, Paperclip } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 function AiUrgencyBadge({ complaintId }: { complaintId: string }) {
@@ -108,6 +108,10 @@ export default function AdminComplaints() {
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
 
+  // Evidence state
+  const [evidences, setEvidences] = useState<any[]>([]);
+  const [loadingEvidences, setLoadingEvidences] = useState(false);
+
   const fetchComplaints = async () => {
     setLoading(true);
     setError('');
@@ -208,6 +212,18 @@ export default function AdminComplaints() {
       console.log("No AI insights yet or error fetching:", err);
     } finally {
       setLoadingInsights(false);
+    }
+
+    // Fetch Evidences
+    setEvidences([]);
+    setLoadingEvidences(true);
+    try {
+      const res = await evidenceApi.get(`/evidence/${complaint.id}`);
+      setEvidences(res.data || []);
+    } catch (err) {
+      console.log("No evidences yet or error fetching:", err);
+    } finally {
+      setLoadingEvidences(false);
     }
   };
 
@@ -442,6 +458,56 @@ export default function AdminComplaints() {
                   </div>
                 </div>
               )}
+
+              {/* Evidence Vault */}
+              <div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase block">Evidencias Adjuntas</span>
+                  {loadingEvidences && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
+                </div>
+                {!loadingEvidences && evidences.length === 0 ? (
+                  <p className="text-sm text-slate-500 italic">No hay evidencias adjuntas para este caso.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {evidences.map((ev) => (
+                      <div key={ev._id || ev.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center space-x-3 overflow-hidden">
+                          <div className="bg-slate-100 p-2 rounded-lg flex-shrink-0">
+                            <Paperclip className="w-5 h-5 text-slate-600" />
+                          </div>
+                          <div className="truncate">
+                            <p className="text-sm font-semibold text-slate-800 truncate" title={ev.originalName}>{ev.originalName}</p>
+                            <div className="flex items-center mt-0.5 space-x-2">
+                              <span className="text-xs text-slate-500">{ev.mimeType}</span>
+                              <span className="text-xs text-slate-300">•</span>
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                ev.status === 'SAFE' ? 'bg-green-100 text-green-700' :
+                                ev.status === 'INFECTED' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {ev.status === 'INFECTED' && <ShieldAlert className="w-3 h-3 mr-1" />}
+                                {ev.status === 'SAFE' && <ShieldCheck className="w-3 h-3 mr-1" />}
+                                {ev.status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {ev.status === 'SAFE' && ev.fileUrl && (
+                          <a 
+                            href={ev.fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="ml-4 flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                            title="Descargar Evidencia Segura"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Actualizar Estado</span>
