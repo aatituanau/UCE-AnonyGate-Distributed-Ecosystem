@@ -104,6 +104,7 @@ export default function AdminComplaints() {
   const [statusUpdateSuccess, setStatusUpdateSuccess] = useState('');
 
   // AI Insights State
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
 
@@ -166,6 +167,7 @@ export default function AdminComplaints() {
 
       // If modal is open for this complaint, refresh insights automatically
       if (payload.complaintId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setSelectedComplaint((prev: any) => {
           if (prev && prev.id === payload.complaintId) {
             // Trigger insight reload implicitly
@@ -222,6 +224,7 @@ export default function AdminComplaints() {
 
       // Update local state IMMEDIATELY to unlock the next valid transitions in the dropdown
       setComplaints(prev => prev.map(c => c.id === selectedComplaint.id ? { ...c, status: newStatus } : c));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setSelectedComplaint((prev: any) => prev ? { ...prev, status: newStatus } : null);
 
       // Auto-close modal after brief success message

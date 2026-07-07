@@ -178,7 +178,7 @@ module "ec2_5_ms_specialized" {
   associate_public_ip_address = false
   allowed_ports               = [22, 3007, 3008, 3009]
   key_name                    = var.key_name
-  user_data = <<-EOF
+  user_data                   = <<-EOF
               #!/bin/bash
               apt-get update
               apt-get install -y docker.io docker-compose
