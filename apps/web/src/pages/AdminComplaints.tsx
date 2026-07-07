@@ -4,6 +4,39 @@ import { statusApi, submissionApi, aiApi } from '../services/api';
 import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle, Zap } from 'lucide-react';
 import { io } from 'socket.io-client';
 
+function AiUrgencyBadge({ complaintId }: { complaintId: string }) {
+  const [urgency, setUrgency] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    aiApi.get(`/api/insights/${complaintId}`)
+      .then(res => {
+        if (mounted && res.data?.urgency) setUrgency(res.data.urgency);
+      })
+      .catch(() => {
+        // Ignore 404
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => { mounted = false; };
+  }, [complaintId]);
+
+  if (loading) return <span className="inline-flex h-2 w-2 rounded-full bg-slate-200 animate-pulse"></span>;
+  if (!urgency) return <span className="text-[10px] text-slate-400 font-medium">N/A</span>;
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm ${urgency === 'CRITICAL' ? 'bg-red-100 text-red-700 border-red-200' :
+        urgency === 'HIGH' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+          urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+            'bg-blue-100 text-blue-700 border-blue-200'
+      }`}>
+      {urgency}
+    </span>
+  );
+}
+
 export default function AdminComplaints() {
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -61,7 +94,7 @@ export default function AdminComplaints() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Modal state
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
@@ -80,7 +113,7 @@ export default function AdminComplaints() {
     try {
       const res = await submissionApi.get('/api/v1/complaints/analyst');
       setComplaints(res.data || []);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status === 404) {
         setError('El endpoint de ms-submission no está disponible.');
@@ -104,7 +137,8 @@ export default function AdminComplaints() {
     const baseUrl = import.meta.env.PROD ? window.location.origin : 'http://localhost:3006';
     const socket = io(baseUrl, {
       path: '/ws/status',
-      auth: { token }
+      auth: { token },
+      transports: ['websocket']
     });
 
     socket.on('connect', () => {
@@ -113,13 +147,35 @@ export default function AdminComplaints() {
 
     socket.on('new_complaint', (payload) => {
       console.log('🔔 [WebSockets] Nueva denuncia recibida!', payload);
-      // Actualizar tabla sin recargar página
+      // Update table without reloading page
       fetchComplaints();
     });
 
     socket.on('status_updated', (payload) => {
       console.log('🔄 [WebSockets] Estado actualizado!', payload);
-      fetchComplaints();
+
+      // CQRS Optimization: Instead of fetching the entire database immediately
+      // we update the local table using the socket payload.
+      if (payload.complaintId && payload.status) {
+        setComplaints(prev => prev.map(c =>
+          c.id === payload.complaintId
+            ? { ...c, status: payload.status }
+            : c
+        ));
+      }
+
+      // If modal is open for this complaint, refresh insights automatically
+      if (payload.complaintId) {
+        setSelectedComplaint((prev: any) => {
+          if (prev && prev.id === payload.complaintId) {
+            // Trigger insight reload implicitly
+            aiApi.get(`/api/insights/${payload.complaintId}`)
+              .then(res => setAiInsights(res.data))
+              .catch(err => console.error('Error auto-refreshing insights:', err));
+          }
+          return prev;
+        });
+      }
     });
 
     return () => {
@@ -127,8 +183,8 @@ export default function AdminComplaints() {
     };
   }, []);
 
-  const filteredComplaints = complaints.filter(c => 
-    c.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredComplaints = complaints.filter(c =>
+    c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.aliasToken.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -139,7 +195,7 @@ export default function AdminComplaints() {
     setNewStatus(complaint.status);
     setStatusUpdateError('');
     setStatusUpdateSuccess('');
-    
+
     // Fetch AI Insights
     setAiInsights(null);
     setLoadingInsights(true);
@@ -155,20 +211,24 @@ export default function AdminComplaints() {
 
   const handleUpdateStatus = async () => {
     if (!selectedComplaint || newStatus === selectedComplaint.status) return;
-    
+
     setStatusUpdating(true);
     setStatusUpdateError('');
     setStatusUpdateSuccess('');
-    
+
     try {
       await statusApi.put(`/status/${selectedComplaint.id}`, { status: newStatus });
-      setStatusUpdateSuccess('Estado actualizado con éxito en ms-status');
-      // Update local state
+      setStatusUpdateSuccess('Estado actualizado con éxito.');
+
+      // Update local state IMMEDIATELY to unlock the next valid transitions in the dropdown
       setComplaints(prev => prev.map(c => c.id === selectedComplaint.id ? { ...c, status: newStatus } : c));
-      setTimeout(() => setSelectedComplaint(null), 1500);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setSelectedComplaint((prev: any) => prev ? { ...prev, status: newStatus } : null);
+
+      // Auto-close modal after brief success message
+      setTimeout(() => setSelectedComplaint(null), 1000);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      setStatusUpdateError(err.response?.data?.message || 'Error al actualizar el estado. Verifica que la transición de la máquina de estados sea válida.');
+      setStatusUpdateError(err.response?.data?.message || 'Error al actualizar el estado. El caso podría haber sido modificado por otra persona. Cierra y vuelve a abrir.');
     } finally {
       setStatusUpdating(false);
     }
@@ -191,11 +251,11 @@ export default function AdminComplaints() {
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <div className="relative w-96">
             <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por Alias Token o ID..." 
+              placeholder="Buscar por Alias Token o ID..."
               className="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-shadow"
             />
           </div>
@@ -227,6 +287,7 @@ export default function AdminComplaints() {
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-4 font-semibold">Caso & Identificador</th>
                     <th className="px-6 py-4 font-semibold">Estado Actual</th>
+                    <th className="px-6 py-4 font-semibold">Urgencia IA</th>
                     <th className="px-6 py-4 font-semibold">Fecha de Recepción</th>
                     <th className="px-6 py-4 font-semibold text-right">Acción</th>
                   </tr>
@@ -250,6 +311,9 @@ export default function AdminComplaints() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
+                        <AiUrgencyBadge complaintId={c.id} />
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-slate-700">
                             {new Date(c.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -260,7 +324,7 @@ export default function AdminComplaints() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); openModal(c); }}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-transparent hover:border-blue-200"
                         >
@@ -280,15 +344,15 @@ export default function AdminComplaints() {
       {/* Modal for viewing and changing status */}
       {selectedComplaint && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[95vh]">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
               <h3 className="text-lg font-bold text-slate-800">Detalles del Caso</h3>
               <button onClick={() => setSelectedComplaint(null)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="p-6 space-y-6">
+
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase block mb-1">ID y Alias</span>
                 <div className="font-mono text-sm text-slate-700">{selectedComplaint.id}</div>
@@ -302,7 +366,26 @@ export default function AdminComplaints() {
                     <Zap className="w-4 h-4" />
                   </span>
                   <h4 className="font-bold text-blue-900">AI Insights</h4>
-                  {loadingInsights && <RefreshCw className="w-4 h-4 animate-spin text-blue-400 ml-2" />}
+                  {!loadingInsights && (
+                    <button
+                      onClick={async () => {
+                        setLoadingInsights(true);
+                        try {
+                          const res = await aiApi.get(`/api/insights/${selectedComplaint.id}`);
+                          setAiInsights(res.data);
+                        } catch (err) {
+                          console.error(err);
+                        } finally {
+                          setLoadingInsights(false);
+                        }
+                      }}
+                      className="ml-auto p-1.5 hover:bg-blue-200/50 rounded-full transition-colors text-blue-600 cursor-pointer"
+                      title="Refrescar análisis de IA"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  )}
+                  {loadingInsights && <RefreshCw className="w-4 h-4 animate-spin text-blue-400 ml-auto" />}
                 </div>
 
                 {loadingInsights ? (
@@ -311,12 +394,11 @@ export default function AdminComplaints() {
                   <div className="space-y-4">
                     <div>
                       <span className="text-xs font-semibold text-blue-800/60 uppercase tracking-wider mb-1 block">Nivel de Urgencia Detectado</span>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border shadow-sm ${
-                        aiInsights.urgency === 'CRITICAL' ? 'bg-red-100 text-red-700 border-red-200' :
-                        aiInsights.urgency === 'HIGH' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-                        aiInsights.urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                        'bg-blue-100 text-blue-700 border-blue-200'
-                      }`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border shadow-sm ${aiInsights.urgency === 'CRITICAL' ? 'bg-red-100 text-red-700 border-red-200' :
+                          aiInsights.urgency === 'HIGH' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                            aiInsights.urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                              'bg-blue-100 text-blue-700 border-blue-200'
+                        }`}>
                         {aiInsights.urgency}
                       </span>
                     </div>
@@ -360,7 +442,7 @@ export default function AdminComplaints() {
 
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Actualizar Estado</span>
-                <select 
+                <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
                   disabled={isAdmin || validTransitions[selectedComplaint.status]?.length === 0}
@@ -394,7 +476,7 @@ export default function AdminComplaints() {
                   <span>{statusUpdateError}</span>
                 </div>
               )}
-              
+
               {statusUpdateSuccess && (
                 <div className="p-3 text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg flex items-start space-x-2">
                   <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -403,15 +485,15 @@ export default function AdminComplaints() {
               )}
 
             </div>
-            
-            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end space-x-3">
-              <button 
+
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end space-x-3 shrink-0">
+              <button
                 onClick={() => setSelectedComplaint(null)}
                 className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 onClick={handleUpdateStatus}
                 disabled={isAdmin || statusUpdating || newStatus === selectedComplaint.status}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 flex items-center space-x-2"
