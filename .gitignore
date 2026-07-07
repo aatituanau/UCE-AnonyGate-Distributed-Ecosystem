@@ -22,3 +22,5 @@ build/
 .agent/*
 **/src/generated/
 .turbo/
+__pycache__/
+*.pyc
