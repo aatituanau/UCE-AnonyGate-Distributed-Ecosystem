@@ -7,6 +7,8 @@ import { ALIAS_SERVICE_PORT } from '../../../domain/ports/outbound/alias.service
 import type { AliasServicePort } from '../../../domain/ports/outbound/alias.service.port';
 import { EVENT_BUS_PORT } from '../../../domain/ports/outbound/event-bus.port';
 import type { EventBusPort } from '../../../domain/ports/outbound/event-bus.port';
+import { NLP_EVENT_BUS_PORT } from '../../../domain/ports/outbound/nlp-event-bus.port';
+import type { NlpEventBusPort } from '../../../domain/ports/outbound/nlp-event-bus.port';
 import { Complaint } from '../../../domain/entities/complaint.entity';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -19,6 +21,8 @@ export class CreateComplaintHandler implements ICommandHandler<CreateComplaintCo
     private readonly aliasService: AliasServicePort,
     @Inject(EVENT_BUS_PORT)
     private readonly eventBus: EventBusPort,
+    @Inject(NLP_EVENT_BUS_PORT)
+    private readonly nlpEventBus: NlpEventBusPort,
   ) {}
 
   async execute(command: CreateComplaintCommand): Promise<Complaint> {
@@ -47,6 +51,14 @@ export class CreateComplaintHandler implements ICommandHandler<CreateComplaintCo
       status: savedComplaint.status,
       timestamp: savedComplaint.createdAt,
     });
+
+    // 5. Publish NLP Analysis Request to RabbitMQ
+    const complaintText = JSON.stringify(command.payload);
+    await this.nlpEventBus.publishNlpRequested(
+      savedComplaint.id,
+      savedComplaint.aliasToken,
+      complaintText,
+    );
 
     return savedComplaint;
   }

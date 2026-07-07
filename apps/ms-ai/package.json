@@ -1,0 +1,8 @@
+{
+  "name": "ms-ai",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "uvicorn src.main:app --reload --port 3007 --host 127.0.0.1"
+  }
+}

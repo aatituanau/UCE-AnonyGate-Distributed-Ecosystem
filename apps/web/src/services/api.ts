@@ -69,3 +69,16 @@ submissionApi.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Instance for MS-AI (Insights)
+export const aiApi = axios.create({
+  baseURL: import.meta.env.VITE_API_AI_URL || 'http://localhost:3007',
+});
+
+aiApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});

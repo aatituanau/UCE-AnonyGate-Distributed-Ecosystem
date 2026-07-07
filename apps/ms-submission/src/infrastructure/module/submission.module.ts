@@ -12,6 +12,8 @@ import { EVENT_BUS_PORT } from '../../domain/ports/outbound/event-bus.port';
 import { KafkaEventBusAdapter } from '../adapters/outbound/kafka/kafka-event-bus.adapter';
 import { ALIAS_SERVICE_PORT } from '../../domain/ports/outbound/alias.service.port';
 import { GrpcAliasAdapter } from '../adapters/outbound/grpc/grpc-alias.adapter';
+import { NLP_EVENT_BUS_PORT } from '../../domain/ports/outbound/nlp-event-bus.port';
+import { RabbitMqNlpEventBusAdapter } from '../adapters/outbound/rabbitmq/rabbitmq-nlp-event-bus.adapter';
 
 @Module({
   imports: [CqrsModule],
@@ -25,6 +27,7 @@ import { GrpcAliasAdapter } from '../adapters/outbound/grpc/grpc-alias.adapter';
     { provide: COMPLAINT_REPOSITORY, useClass: PrismaComplaintRepository },
     { provide: EVENT_BUS_PORT, useClass: KafkaEventBusAdapter },
     { provide: ALIAS_SERVICE_PORT, useClass: GrpcAliasAdapter },
+    { provide: NLP_EVENT_BUS_PORT, useClass: RabbitMqNlpEventBusAdapter },
   ],
 })
 export class SubmissionModule {}
