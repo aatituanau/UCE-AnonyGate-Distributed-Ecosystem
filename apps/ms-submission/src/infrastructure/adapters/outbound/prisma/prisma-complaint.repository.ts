@@ -60,4 +60,11 @@ export class PrismaComplaintRepository implements ComplaintRepositoryPort {
       (c) => new Complaint(c.id, c.aliasToken, c.payload, c.status, c.createdAt),
     );
   }
+
+  async updateStatus(id: string, status: string): Promise<void> {
+    await this.prisma.complaint.update({
+      where: { id },
+      data: { status },
+    });
+  }
 }
