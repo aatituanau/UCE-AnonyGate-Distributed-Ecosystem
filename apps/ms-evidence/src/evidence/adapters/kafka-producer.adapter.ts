@@ -9,7 +9,7 @@ export class KafkaProducerAdapter implements OnModuleInit, OnModuleDestroy {
   private readonly producer: Producer;
 
   constructor(private readonly configService: ConfigService) {
-    const brokers = this.configService.get<string>('KAFKA_BROKERS') || 'localhost:9092';
+    const brokers = this.configService.get<string>('KAFKA_BROKER') || 'localhost:9092';
     this.kafka = new Kafka({
       clientId: 'ms-evidence',
       brokers: brokers.split(','),
