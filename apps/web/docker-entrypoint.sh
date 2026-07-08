@@ -42,6 +42,10 @@ for file in /usr/share/nginx/html/assets/*.js; do
     if [ ! -z "$VITE_API_AI_URL" ]; then
       sed -i "s|http://localhost:3007|${VITE_API_AI_URL}|g" "$file"
     fi
+    
+    if [ ! -z "$VITE_API_EVIDENCE_URL" ]; then
+      sed -i "s|http://localhost:3008|${VITE_API_EVIDENCE_URL}|g" "$file"
+    fi
   fi
 done
 
@@ -59,6 +63,11 @@ fi
 if [ ! -z "$MS_STATUS_IP" ]; then
   echo "Injecting MS_STATUS_IP: $MS_STATUS_IP into Nginx proxy_pass..."
   sed -i "s|MS_STATUS_IP|${MS_STATUS_IP}|g" /etc/nginx/conf.d/default.conf
+fi
+
+if [ ! -z "$MS_SPECIALIZED_IP" ]; then
+  echo "Injecting MS_SPECIALIZED_IP: $MS_SPECIALIZED_IP into Nginx proxy_pass..."
+  sed -i "s|MS_SPECIALIZED_IP|${MS_SPECIALIZED_IP}|g" /etc/nginx/conf.d/default.conf
 fi
 
 echo "Injection completed. Starting Nginx..."

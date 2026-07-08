@@ -491,5 +491,6 @@ jobs:
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               -e MS_PROCESSING_IP="${{ secrets.EC2_HOST_MS_PROCESSING }}" \
               -e MS_STATUS_IP="${{ secrets.EC2_HOST_MS_STATUS }}" \
+              -e MS_SPECIALIZED_IP="${{ secrets.EC2_HOST_MS_SPECIALIZED }}" \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-web:latest
