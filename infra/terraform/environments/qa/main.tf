@@ -27,6 +27,7 @@ module "ec2_1_nginx_bastion" {
                   listen 80 default_server;
                   listen [::]:80 default_server;
                   server_name aleztituanaqa1.distribuidauce.org;
+                  client_max_body_size 50M;
 
                   location / {
                       proxy_pass http://127.0.0.1:8080;
