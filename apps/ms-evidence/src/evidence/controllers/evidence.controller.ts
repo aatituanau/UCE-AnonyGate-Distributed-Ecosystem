@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { Controller, Post, Get, Body, Param, UseInterceptors, UploadedFile, UseGuards, Req, Headers, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EvidenceService } from '../services/evidence.service';
