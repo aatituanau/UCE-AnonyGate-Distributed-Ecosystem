@@ -284,14 +284,14 @@ jobs:
 
             # Deploy MS-Evidence (Zero Downtime Strategy)
             echo "Starting Replica Test for ms-evidence..."
-            sudo docker run -d --name ms-evidence-test --network anonygate-net --env-file .env -e MONGO_URI="mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Evidence?authSource=admin" -e S3_BUCKET_NAME="anonygate-evidence-${{ secrets.AWS_ACCOUNT_ID }}" -e AWS_REGION="us-east-1" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-evidence:latest
+            sudo docker run -d --name ms-evidence-test --network anonygate-net --env-file .env -e MONGO_URI="mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Evidence?authSource=admin" -e S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}" -e AWS_REGION="us-east-1" -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-evidence:latest
             sleep 10
             if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-evidence-test)" == "true" ]; then
               echo "Replica stable. Replacing old instance..."
               sudo docker rm -f ms-evidence-test
               sudo docker stop ms-evidence || true
               sudo docker rm ms-evidence || true
-              sudo docker run -d --name ms-evidence --network anonygate-net -p 3008:3008 --env-file .env -e MONGO_URI="mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Evidence?authSource=admin" -e S3_BUCKET_NAME="anonygate-evidence-${{ secrets.AWS_ACCOUNT_ID }}" -e AWS_REGION="us-east-1" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-evidence:latest
+              sudo docker run -d --name ms-evidence --network anonygate-net -p 3008:3008 --env-file .env -e MONGO_URI="mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Evidence?authSource=admin" -e S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}" -e AWS_REGION="us-east-1" -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-evidence:latest
             else
               echo "Deploy failed. Old instance remains active."
               sudo docker rm -f ms-evidence-test
