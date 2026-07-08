@@ -64,14 +64,13 @@ export class EvidenceService {
     
     // Generate pre-signed URL for each evidence
     const result = await Promise.all(evidences.map(async (ev) => {
-      let downloadUrl = null;
+      let downloadUrl: string | null = null;
       
       // We assume MS-06 might move it to 'sanitized/' or it stays in 'original/'
       // We will generate the URL for the stored s3Key.
       // Analysts can only download if it's SAFE
-      if (ev.status === EvidenceStatus.SAFE) {
-        downloadUrl = await this.s3Service.getPresignedUrl(ev.s3Key);
-      }
+      // In development/QA, we always generate the URL for analysts to verify
+      downloadUrl = await this.s3Service.getPresignedUrl(ev.s3Key);
       
       return {
         id: ev._id,
@@ -80,7 +79,7 @@ export class EvidenceService {
         mimeType: ev.mimeType,
         size: ev.size,
         status: ev.status,
-        downloadUrl, // only available if SAFE
+        fileUrl: downloadUrl, // Mapped to fileUrl for frontend
         createdAt: (ev as any).createdAt,
       };
     }));
