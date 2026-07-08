@@ -492,15 +492,15 @@ export default function AdminComplaints() {
                             </div>
                           </div>
                         </div>
-                        {ev.status === 'SAFE' && ev.fileUrl && (
+                        {ev.fileUrl && (
                           <a 
                             href={ev.fileUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="ml-4 flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                            title="Descargar Evidencia Segura"
+                            title="Ver Evidencia (Advertencia: Sin sanear)"
                           >
-                            <Download className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </a>
                         )}
                       </div>
