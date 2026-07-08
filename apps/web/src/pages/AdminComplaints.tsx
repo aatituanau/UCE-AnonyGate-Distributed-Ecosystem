@@ -109,6 +109,7 @@ export default function AdminComplaints() {
   const [loadingInsights, setLoadingInsights] = useState(false);
 
   // Evidence state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [evidences, setEvidences] = useState<any[]>([]);
   const [loadingEvidences, setLoadingEvidences] = useState(false);
 
