@@ -26,6 +26,7 @@ module "ec2_1_nginx_bastion" {
               server {
                   listen 80 default_server;
                   listen [::]:80 default_server;
+                  server_name alextituanaprod1.distribuidauce.org;
 
                   location / {
                       proxy_pass http://127.0.0.1:8080;

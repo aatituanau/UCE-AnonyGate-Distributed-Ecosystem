@@ -456,17 +456,25 @@ jobs:
             sudo docker stop frontend-client || true
             sudo docker rm frontend-client || true
             
+            # Set Cloudflare domain based on environment
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              DOMAIN_NAME="alextituanaprod1.distribuidauce.org"
+            else
+              DOMAIN_NAME="aleztituanaqa1.distribuidauce.org"
+            fi
+            PROTOCOL="https"
+
             # Run the frontend container on port 8080 of the Nginx machine
             sudo docker run -d --name web \
               -p 8080:80 \
-              -e VITE_API_AUTH_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_ALIAS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_SUBMISSION_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_ADMIN_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_STATUS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_FORMS_URL="http://${{ secrets.EC2_HOST_NGINX }}/graphql" \
-              -e VITE_API_AUDIT_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
-              -e VITE_API_AI_URL="http://${{ secrets.EC2_HOST_NGINX }}/ai" \
+              -e VITE_API_AUTH_URL="${PROTOCOL}://${DOMAIN_NAME}" \
+              -e VITE_API_ALIAS_URL="${PROTOCOL}://${DOMAIN_NAME}" \
+              -e VITE_API_SUBMISSION_URL="${PROTOCOL}://${DOMAIN_NAME}" \
+              -e VITE_API_ADMIN_URL="${PROTOCOL}://${DOMAIN_NAME}" \
+              -e VITE_API_STATUS_URL="${PROTOCOL}://${DOMAIN_NAME}" \
+              -e VITE_API_FORMS_URL="${PROTOCOL}://${DOMAIN_NAME}/graphql" \
+              -e VITE_API_AUDIT_URL="${PROTOCOL}://${DOMAIN_NAME}" \
+              -e VITE_API_AI_URL="${PROTOCOL}://${DOMAIN_NAME}/ai" \
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               -e MS_PROCESSING_IP="${{ secrets.EC2_HOST_MS_PROCESSING }}" \
               -e MS_STATUS_IP="${{ secrets.EC2_HOST_MS_STATUS }}" \
