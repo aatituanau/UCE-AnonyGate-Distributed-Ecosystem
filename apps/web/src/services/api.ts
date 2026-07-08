@@ -56,3 +56,42 @@ auditApi.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Instance for MS-Submission (requires JWT for Analysts)
+export const submissionApi = axios.create({
+  baseURL: import.meta.env.VITE_API_SUBMISSION_URL || 'http://localhost:3003',
+});
+
+submissionApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Instance for MS-AI (Insights)
+export const aiApi = axios.create({
+  baseURL: import.meta.env.VITE_API_AI_URL || 'http://localhost:3007',
+});
+
+aiApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Instance for MS-Evidence (requires JWT for Analysts)
+export const evidenceApi = axios.create({
+  baseURL: import.meta.env.VITE_API_EVIDENCE_URL || 'http://localhost:3008',
+});
+
+evidenceApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});

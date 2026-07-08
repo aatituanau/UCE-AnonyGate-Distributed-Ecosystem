@@ -3,6 +3,8 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { ComplaintController } from '../adapters/inbound/http/complaint.controller';
 import { CreateComplaintHandler } from '../../application/commands/create-complaint/create-complaint.handler';
 import { GetComplaintHandler } from '../../application/queries/get-complaint/get-complaint.handler';
+import { GetComplaintByIdHandler } from '../../application/queries/get-complaint-by-id/get-complaint-by-id.handler';
+import { GetAllComplaintsHandler } from '../../application/queries/get-all-complaints/get-all-complaints.handler';
 import { COMPLAINT_REPOSITORY } from '../../domain/ports/outbound/complaint.repository.port';
 import { PrismaComplaintRepository } from '../adapters/outbound/prisma/prisma-complaint.repository';
 import { PrismaService } from '../adapters/outbound/prisma/prisma.service';
@@ -10,6 +12,8 @@ import { EVENT_BUS_PORT } from '../../domain/ports/outbound/event-bus.port';
 import { KafkaEventBusAdapter } from '../adapters/outbound/kafka/kafka-event-bus.adapter';
 import { ALIAS_SERVICE_PORT } from '../../domain/ports/outbound/alias.service.port';
 import { GrpcAliasAdapter } from '../adapters/outbound/grpc/grpc-alias.adapter';
+import { NLP_EVENT_BUS_PORT } from '../../domain/ports/outbound/nlp-event-bus.port';
+import { RabbitMqNlpEventBusAdapter } from '../adapters/outbound/rabbitmq/rabbitmq-nlp-event-bus.adapter';
 
 @Module({
   imports: [CqrsModule],
@@ -17,10 +21,13 @@ import { GrpcAliasAdapter } from '../adapters/outbound/grpc/grpc-alias.adapter';
   providers: [
     CreateComplaintHandler,
     GetComplaintHandler,
+    GetComplaintByIdHandler,
+    GetAllComplaintsHandler,
     PrismaService,
     { provide: COMPLAINT_REPOSITORY, useClass: PrismaComplaintRepository },
     { provide: EVENT_BUS_PORT, useClass: KafkaEventBusAdapter },
     { provide: ALIAS_SERVICE_PORT, useClass: GrpcAliasAdapter },
+    { provide: NLP_EVENT_BUS_PORT, useClass: RabbitMqNlpEventBusAdapter },
   ],
 })
 export class SubmissionModule {}

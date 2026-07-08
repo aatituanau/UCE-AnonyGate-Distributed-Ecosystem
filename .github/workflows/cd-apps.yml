@@ -18,7 +18,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [ms-auth, ms-alias, ms-submission, ms-admin, ms-status, ms-forms, web, ms-audit]
+        service: [ms-auth, ms-alias, ms-submission, ms-admin, ms-status, ms-forms, web, ms-audit, ms-ai, ms-evidence]
     
     steps:
       - uses: actions/checkout@v4
@@ -258,6 +258,7 @@ jobs:
             sudo docker system prune -af --volumes
             sudo docker network create anonygate-net || true
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-evidence:latest
 
             echo "Starting Replica Test for ms-submission..."
             sudo docker run -d --name ms-submission-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-submission:latest
@@ -280,6 +281,25 @@ jobs:
 
             echo "=== LOGS DE MS-SUBMISSION ==="
             sudo docker logs ms-submission
+
+            # Deploy MS-Evidence (Zero Downtime Strategy)
+            echo "Starting Replica Test for ms-evidence..."
+            sudo docker run -d --name ms-evidence-test --network anonygate-net --env-file .env -e MONGO_URI="mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Evidence?authSource=admin" -e S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}" -e AWS_REGION="us-east-1" -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-evidence:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-evidence-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-evidence-test
+              sudo docker stop ms-evidence || true
+              sudo docker rm ms-evidence || true
+              sudo docker run -d --name ms-evidence --network anonygate-net -p 3008:3008 --env-file .env -e MONGO_URI="mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_Evidence?authSource=admin" -e S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}" -e AWS_REGION="us-east-1" -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-evidence:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker rm -f ms-evidence-test
+              exit 1
+            fi
+
+            echo "=== LOGS DE MS-EVIDENCE ==="
+            sudo docker logs ms-evidence
 
             # Deploy MS-Admin (Zero Downtime Strategy)
             sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-admin:latest
@@ -380,6 +400,55 @@ jobs:
             sleep 5
             sudo docker logs ms-audit
 
+      - name: Deploy Specialized Microservices via Bastion
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST_MS_SPECIALIZED }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.EC2_HOST_NGINX }}
+          proxy_username: ubuntu
+          proxy_key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Waiting for cloud-init to finish..."
+            while [ ! -f /var/lib/cloud/instance/boot-finished ]; do sleep 5; done
+            
+            if ! command -v docker &> /dev/null; then
+              echo "Docker not found! Forcing installation..."
+              sudo apt-get update
+              sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose
+            fi
+            
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            echo "MONGO_URI=mongodb://anonygate:anonygate_pass@${{ secrets.DB_MONGO_IP }}:27017/DB_AI_Summaries?authSource=admin" > .env
+            echo "KAFKA_BROKER=${{ secrets.DB_QUEUES_IP }}:9092" >> .env
+            echo "RABBITMQ_URL=amqp://guest:guest@${{ secrets.DB_QUEUES_IP }}:5672/" >> .env
+            echo "HUGGINGFACE_API_KEY=${{ secrets.HUGGINGFACE_API_KEY }}" >> .env
+
+            sudo docker system prune -af --volumes
+            sudo docker network create anonygate-net || true
+            sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-ai:latest
+
+            echo "Starting Replica Test for ms-ai..."
+            sudo docker run -d --name ms-ai-test --network anonygate-net --env-file .env ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-ai:latest
+            sleep 10
+            if [ "$(sudo docker inspect -f '{{.State.Running}}' ms-ai-test)" == "true" ]; then
+              echo "Replica stable. Replacing old instance..."
+              sudo docker rm -f ms-ai-test
+              sudo docker stop ms-ai || true
+              sudo docker rm ms-ai || true
+              sudo docker run -d --name ms-ai --network anonygate-net -p 3007:3007 --env-file .env --restart unless-stopped ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-ms-ai:latest
+            else
+              echo "Deploy failed. Old instance remains active."
+              sudo docker logs ms-ai-test
+              sudo docker rm -f ms-ai-test
+              exit 1
+            fi
+
+            echo "=== LOGS DE MS-AI ==="
+            sudo docker logs ms-ai
+
       - name: Deploy Frontend to Nginx Host
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -417,8 +486,11 @@ jobs:
               -e VITE_API_STATUS_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e VITE_API_FORMS_URL="http://${{ secrets.EC2_HOST_NGINX }}/graphql" \
               -e VITE_API_AUDIT_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
+              -e VITE_API_AI_URL="http://${{ secrets.EC2_HOST_NGINX }}/ai" \
+              -e VITE_API_EVIDENCE_URL="http://${{ secrets.EC2_HOST_NGINX }}" \
               -e MS_CORE_IP="${{ secrets.EC2_HOST_MS_CORE }}" \
               -e MS_PROCESSING_IP="${{ secrets.EC2_HOST_MS_PROCESSING }}" \
               -e MS_STATUS_IP="${{ secrets.EC2_HOST_MS_STATUS }}" \
+              -e MS_SPECIALIZED_IP="${{ secrets.EC2_HOST_MS_SPECIALIZED }}" \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-web:latest

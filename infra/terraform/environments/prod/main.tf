@@ -26,6 +26,8 @@ module "ec2_1_nginx_bastion" {
               server {
                   listen 80 default_server;
                   listen [::]:80 default_server;
+                  server_name alextituanaprod1.distribuidauce.org;
+                  client_max_body_size 50M;
 
                   location / {
                       proxy_pass http://127.0.0.1:8080;
@@ -63,6 +65,12 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
+                  location /evidence/ {
+                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3008;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
                   location /status/ {
                       proxy_pass http://${module.ec2_4_ms_status.private_ip}:3006;
                       proxy_set_header Host $${host};
@@ -84,6 +92,12 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header Host $${host};
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
+                  location /ai/ {
+                      proxy_pass http://${module.ec2_5_ms_specialized.private_ip}:3007/;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
                   # Future routes for forms, submission, etc will be added here
               }
               NGINXCONF
@@ -130,7 +144,7 @@ module "ec2_3_ms_processing" {
   subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t2.micro"
   associate_public_ip_address = false
-  allowed_ports               = [22, 3003, 3004, 3005, 3009]
+  allowed_ports               = [22, 3003, 3004, 3005, 3008, 3009]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
@@ -162,25 +176,24 @@ module "ec2_4_ms_status" {
 }
 
 # --- EC2-5: PRIVATE SUBNET (ms-sanitization, ms-ai) ---
-# TEMPORARILY DISABLED FOR RAPID TESTING
-# module "ec2_5_ms_specialized" {
-#   source                      = "../../modules/ec2"
-#   environment                 = var.environment
-#   instance_name               = "ec2-5-ms-specialized"
-#   vpc_id                      = module.vpc.vpc_id
-#   subnet_id                   = module.vpc.private_subnet_ids[0]
-#   instance_type               = "t2.micro"
-#   associate_public_ip_address = false
-#   allowed_ports               = [22, 3008, 3009] # Using arbitrary ports for n8n/Python
-#   key_name                    = var.key_name
-#   user_data = <<-EOF
-#               #!/bin/bash
-#               apt-get update
-#               apt-get install -y docker.io docker-compose
-#               systemctl start docker
-#               systemctl enable docker
-#               EOF
-# }
+module "ec2_5_ms_specialized" {
+  source                      = "../../modules/ec2"
+  environment                 = var.environment
+  instance_name               = "ec2-5-ms-specialized"
+  vpc_id                      = module.vpc.vpc_id
+  subnet_id                   = module.vpc.private_subnet_ids[0]
+  instance_type               = "t3.medium"
+  associate_public_ip_address = false
+  allowed_ports               = [22, 3007]
+  key_name                    = var.key_name
+  user_data                   = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              EOF
+}
 
 # --- EC2-6: PRIVATE SUBNET (PostgreSQL) ---
 module "ec2_6_db_postgres" {
@@ -284,3 +297,16 @@ module "ec2_8_db_queues" {
               docker run -d --name mosquitto --restart unless-stopped -p 1883:1883 -p 9001:9001 -v $(pwd)/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto:2.0
               EOF
 }
+
+# --- AWS S3 BUCKET FOR EVIDENCES ---
+resource "aws_s3_bucket" "evidence" {
+  bucket = "anonygate-evidence-${var.aws_account_id}"
+}
+
+resource "aws_s3_bucket_versioning" "evidence" {
+  bucket = aws_s3_bucket.evidence.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+

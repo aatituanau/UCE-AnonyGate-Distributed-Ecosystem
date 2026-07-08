@@ -51,4 +51,20 @@ export class PrismaComplaintRepository implements ComplaintRepositoryPort {
       found.createdAt,
     );
   }
+
+  async findAll(): Promise<Complaint[]> {
+    const found = await this.prisma.complaint.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return found.map(
+      (c) => new Complaint(c.id, c.aliasToken, c.payload, c.status, c.createdAt),
+    );
+  }
+
+  async updateStatus(id: string, status: string): Promise<void> {
+    await this.prisma.complaint.update({
+      where: { id },
+      data: { status },
+    });
+  }
 }

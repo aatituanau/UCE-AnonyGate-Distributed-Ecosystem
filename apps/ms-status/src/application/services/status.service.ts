@@ -143,6 +143,9 @@ export class StatusService {
     ) {
       void this.notificationService.notifyCriticalAlert(updatedCase!);
     }
+    
+    // Trigger UI refresh via WebSockets so the Analyst sees the AI insights immediately
+    this.notificationService.notifyStatusUpdate(updatedCase!, caseStatus.status as string);
   }
 
   /**
