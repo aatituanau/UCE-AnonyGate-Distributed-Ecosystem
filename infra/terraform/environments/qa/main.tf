@@ -64,6 +64,12 @@ module "ec2_1_nginx_bastion" {
                       proxy_set_header X-Real-IP $${remote_addr};
                   }
 
+                  location /evidence/ {
+                      proxy_pass http://${module.ec2_3_ms_processing.private_ip}:3008/;
+                      proxy_set_header Host $${host};
+                      proxy_set_header X-Real-IP $${remote_addr};
+                  }
+
                   location /status/ {
                       proxy_pass http://${module.ec2_4_ms_status.private_ip}:3006;
                       proxy_set_header Host $${host};
@@ -290,3 +296,16 @@ module "ec2_8_db_queues" {
               docker run -d --name mosquitto --restart unless-stopped -p 1883:1883 -p 9001:9001 -v $(pwd)/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto:2.0
               EOF
 }
+
+# --- AWS S3 BUCKET FOR EVIDENCES ---
+resource "aws_s3_bucket" "evidence" {
+  bucket = "anonygate-evidence-${var.aws_account_id}"
+}
+
+resource "aws_s3_bucket_versioning" "evidence" {
+  bucket = aws_s3_bucket.evidence.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+

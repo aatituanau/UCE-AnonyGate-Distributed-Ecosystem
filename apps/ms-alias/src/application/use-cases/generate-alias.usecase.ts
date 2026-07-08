@@ -30,9 +30,10 @@ export class GenerateAliasUseCase {
     const randomAdjective =
       adjectives[Math.floor(Math.random() * adjectives.length)];
     const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-    const randomNumber = Math.floor(Math.random() * 1000);
+    const randomNumber = Math.floor(1000 + Math.random() * 9000);
+    const uniqueSuffix = crypto.randomBytes(2).toString('hex'); // 4 chars
 
-    const aliasCode = `${randomAdjective}-${randomNoun}-${randomNumber}`;
+    const aliasCode = `${randomAdjective}-${randomNoun}-${randomNumber}-${uniqueSuffix}`;
 
     // 2. Create Entities using Node's crypto for UUIDs
     const aliasId = crypto.randomUUID();

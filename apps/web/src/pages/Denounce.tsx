@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Send, FileText, Key, Copy, CheckCircle2, AlertCircle, Clock, UploadCloud } from 'lucide-react';
 
 export default function Denounce() {
   const statusLabels: Record<string, string> = {
@@ -33,7 +33,6 @@ export default function Denounce() {
     }
   };
 
-  const [formData, setFormData] = useState({ title: '', description: '', faculty: '' });
   const [dynamicData, setDynamicData] = useState<Record<string, any>>({});
   const [availableForms, setAvailableForms] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -41,6 +40,7 @@ export default function Denounce() {
   const [resultAlias, setResultAlias] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
 
   // Llama a MS-03 cuando la pantalla carga para traer los esquemas disponibles
   useEffect(() => {
@@ -96,18 +96,38 @@ export default function Denounce() {
     try {
       // 1. Get Secret Alias from MS-02 (Alias Service)
       const API_ALIAS = import.meta.env.VITE_API_ALIAS_URL || 'http://localhost:3001';
-      const aliasRes = await axios.post(`${API_ALIAS}/aliases/generate`, formData);
+      const aliasRes = await axios.post(`${API_ALIAS}/aliases/generate`, { payload: dynamicData });
       const secretAlias = aliasRes.data.alias;
 
       // 2. Submit Full Payload to MS-04 (Submission Service)
       const API_SUBMISSION = import.meta.env.VITE_API_SUBMISSION_URL || 'http://localhost:3003';
-      await axios.post(`${API_SUBMISSION}/api/v1/complaints`, {
+      const submitRes = await axios.post(`${API_SUBMISSION}/api/v1/complaints`, {
         aliasToken: secretAlias,
-        payload: { ...formData, categoryId: selectedCategoryId, dynamicData }
+        payload: { categoryId: selectedCategoryId, ...dynamicData }
       });
+      const complaintId = submitRes.data.id;
+
+      // 3. Submit Multiple Evidences if selected
+      if (evidenceFiles.length > 0 && complaintId) {
+        const API_EVIDENCE = import.meta.env.VITE_API_EVIDENCE_URL || 'http://localhost:3008';
+        
+        await Promise.all(evidenceFiles.map(async (file) => {
+          const formUpload = new FormData();
+          formUpload.append('complaintId', complaintId);
+          formUpload.append('file', file);
+
+          return axios.post(`${API_EVIDENCE}/evidence/upload`, formUpload, {
+            headers: {
+              'x-alias-token': secretAlias,
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        }));
+      }
 
       setResultAlias(secretAlias);
-      setFormData({ title: '', description: '', faculty: '' }); // reset form
+      setDynamicData({});
+      setEvidenceFiles([]);
     } catch (err: unknown) {
       console.error(err);
       const e = err as { response?: { data?: { message?: string } } };
@@ -142,7 +162,7 @@ export default function Denounce() {
         alias: trackingAlias,
         status: liveStatus.status,
         urgency: liveStatus.urgency,
-        faculty: complaintData.faculty,
+        faculty: complaintData.payload?.facultad || complaintData.payload?.Facultad || complaintData.payload?.['Facultad involucrada'] || 'No especificada',
         submittedAt: complaintData.createdAt,
         history: liveStatus.history || []
       });
@@ -203,56 +223,6 @@ export default function Denounce() {
             </div>
           ) : (
             <form onSubmit={handleDenounce} className="space-y-6">
-              
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Asunto de la denuncia</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="input-premium"
-                  placeholder="Ej: Irregularidad en calificaciones, Abuso de poder..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Facultad involucrada</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Building className="h-5 w-5 text-slate-400" />
-                  </div>
-                  <select
-                    required
-                    value={formData.faculty}
-                    onChange={(e) => setFormData({ ...formData, faculty: e.target.value })}
-                    className="input-premium pl-11 w-full bg-white appearance-none"
-                  >
-                    <option value="" disabled>Seleccione la entidad...</option>
-                    <option value="Facultad de Ingeniería">Facultad de Ingeniería</option>
-                    <option value="Facultad de Ciencias Médicas">Facultad de Ciencias Médicas</option>
-                    <option value="Facultad de Jurisprudencia">Facultad de Jurisprudencia</option>
-                    <option value="Facultad de Economía">Facultad de Economía</option>
-                    <option value="Facultad de Arquitectura">Facultad de Arquitectura</option>
-                    <option value="Facultad de Artes">Facultad de Artes</option>
-                    <option value="Otra Entidad / Departamento">Otra Entidad / Departamento (Ej: TICs, Bienestar)</option>
-                  </select>
-                </div>
-                {/* Lógica para "Otra Entidad" */}
-                {formData.faculty === 'Otra Entidad / Departamento' && (
-                  <div className="mt-3">
-                    <input
-                      type="text"
-                      required
-                      value={dynamicData['faculty_other'] || ''}
-                      onChange={(e) => setDynamicData({ ...dynamicData, faculty_other: e.target.value })}
-                      className="input-premium w-full animate-fade-in"
-                      placeholder="Por favor, especifique la Entidad o Departamento..."
-                    />
-                  </div>
-                )}
-              </div>
-
               {/* --- INTEGRACIÓN DE FORMULARIOS DINÁMICOS --- */}
               {availableForms.length > 0 && (
                 <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl mb-6 shadow-sm">
@@ -317,6 +287,15 @@ export default function Denounce() {
                         />
                       )}
                     </div>
+                  ) : field.type === 'textarea' ? (
+                    <textarea
+                      required
+                      rows={4}
+                      value={dynamicData[field.name] || ''}
+                      onChange={(e) => setDynamicData({ ...dynamicData, [field.name]: e.target.value })}
+                      className="input-premium resize-none"
+                      placeholder={`Ej: ${field.label || field.name}`}
+                    ></textarea>
                   ) : (
                     <input
                       type={field.type === 'number' ? 'number' : 'text'}
@@ -334,17 +313,50 @@ export default function Denounce() {
               {/* MUESTRA ESTOS CAMPOS SOLO SI YA SELECCIONÓ LA CATEGORÍA */}
               {selectedCategoryId && (
                 <div className="space-y-6 animate-fade-in">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Descripción detallada de los hechos</label>
-                    <textarea
-                      required
-                      rows={5}
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="input-premium resize-none"
-                      placeholder="Describe los hechos con la mayor cantidad de detalles posibles..."
-                    ></textarea>
-                  </div>
+
+                  {/* UPLOAD EVIDENCE SECTION */}
+                  <div className="p-5 border border-dashed border-slate-300 bg-slate-50/50 rounded-xl">
+                    <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center space-x-2">
+                      <UploadCloud className="w-5 h-5 text-slate-500" />
+                      <span>Adjuntar Evidencias (Opcional)</span>
+                    </label>
+                    <p className="text-xs text-slate-500 mb-3">Puedes seleccionar múltiples archivos (Imágenes, PDF, etc. Máx 10MB por archivo).</p>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => {
+                        const newFiles = Array.from(e.target.files || []);
+                        setEvidenceFiles(prev => [...prev, ...newFiles]);
+                        // Limpiar el valor del input para permitir seleccionar el mismo archivo de nuevo si se borró
+                        e.target.value = '';
+                      }}
+                      className="block w-full text-sm text-slate-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100 cursor-pointer"
+                    />
+                    
+                    {evidenceFiles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <span className="text-xs font-bold text-slate-500 uppercase">Archivos seleccionados ({evidenceFiles.length}):</span>
+                        <ul className="space-y-1">
+                          {evidenceFiles.map((file, i) => (
+                            <li key={i} className="flex justify-between items-center bg-white p-2 rounded border border-slate-200 text-sm">
+                              <span className="truncate text-slate-700">{file.name}</span>
+                              <button 
+                                type="button" 
+                                onClick={() => setEvidenceFiles(prev => prev.filter((_, idx) => idx !== i))}
+                                className="text-red-500 hover:text-red-700 font-bold ml-2 shrink-0 px-2"
+                              >
+                                ×
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}</div>
 
                   <button type="submit" disabled={loading} className="btn-primary w-full h-[52px] flex items-center justify-center space-x-2 text-base">
                     {loading ? (
