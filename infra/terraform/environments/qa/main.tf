@@ -143,7 +143,7 @@ module "ec2_3_ms_processing" {
   subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t2.micro"
   associate_public_ip_address = false
-  allowed_ports               = [22, 3003, 3004, 3005, 3009]
+  allowed_ports               = [22, 3003, 3004, 3005, 3008, 3009]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
@@ -183,7 +183,7 @@ module "ec2_5_ms_specialized" {
   subnet_id                   = module.vpc.private_subnet_ids[0]
   instance_type               = "t3.medium"
   associate_public_ip_address = false
-  allowed_ports               = [22, 3007, 3008, 3009]
+  allowed_ports               = [22, 3007]
   key_name                    = var.key_name
   user_data                   = <<-EOF
               #!/bin/bash
