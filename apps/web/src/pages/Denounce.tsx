@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Send, FileText, Building, Key, Copy, CheckCircle2, AlertCircle, Clock, UploadCloud } from 'lucide-react';
+import { Send, FileText, Key, Copy, CheckCircle2, AlertCircle, Clock, UploadCloud } from 'lucide-react';
 
 export default function Denounce() {
   const statusLabels: Record<string, string> = {

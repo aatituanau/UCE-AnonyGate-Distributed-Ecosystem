@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { statusApi, submissionApi, aiApi, evidenceApi } from '../services/api';
-import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle, Zap, ShieldAlert, ShieldCheck, Download, Paperclip } from 'lucide-react';
+import { AlertCircle, FileText, Search, RefreshCw, Eye, X, CheckCircle, Zap, ShieldAlert, ShieldCheck, Paperclip } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 function AiUrgencyBadge({ complaintId }: { complaintId: string }) {
