@@ -1,0 +1,24 @@
+{
+  "name": "anonygate-functional-tests",
+  "version": "1.0.0",
+  "description": "Functional tests for AnonyGate using Selenium and Cucumber",
+  "main": "index.js",
+  "scripts": {
+    "test": "cucumber-js"
+  },
+  "keywords": [
+    "qa",
+    "selenium",
+    "cucumber",
+    "bdd"
+  ],
+  "author": "AnonyGate QA Team",
+  "license": "ISC",
+  "dependencies": {
+    "@cucumber/cucumber": "^10.0.0",
+    "selenium-webdriver": "^4.16.0"
+  },
+  "devDependencies": {
+    "chai": "^4.4.1"
+  }
+}
